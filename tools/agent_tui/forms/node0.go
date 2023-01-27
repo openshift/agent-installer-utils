@@ -5,6 +5,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/nmstate/nmstate/rust/src/go/nmstate/v2"
+	"github.com/openshift/agent-installer-utils/tools/agent_tui/dialogs"
 	tuiNet "github.com/openshift/agent-installer-utils/tools/agent_tui/net"
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/newt"
 	"github.com/rivo/tview"
@@ -13,30 +14,54 @@ import (
 const (
 	CONTINUE  string = "Continue Installation"
 	CONFIGURE string = "Configure Networking"
+	YES       string = "Yes"
+	NO        string = "No"
 )
+
+func isNode0Handler(app *tview.Application, pages *tview.Pages) func(int, string) {
+	return func(buttonIndex int, buttonLabel string) {
+		if buttonLabel == YES {
+			// TODO: Print addressing, offer to configure, done
+
+			node0Form := Node0Form(app, pages)
+			pages.AddPage("node0Form", node0Form, true, true)
+		} else {
+			regNodeForm := RegNodeModalForm(app, pages)
+			pages.AddPage("regNodeConfig", regNodeForm, true, true)
+		}
+	}
+}
+
+func IsNode0Modal(app *tview.Application, pages *tview.Pages) tview.Primitive {
+	modal := tview.NewModal().
+		SetText("Do you wish for this node to be the one that runs the installation service (only one node may perform this function)?").
+		SetTextColor(tcell.ColorBlack).
+		SetDoneFunc(isNode0Handler(app, pages)).
+		SetBackgroundColor(newt.ColorGray).
+		SetButtonTextColor(tcell.ColorBlack).
+		SetButtonBackgroundColor(tcell.ColorDarkGray)
+
+	node0Buttons := []string{YES, NO}
+	modal.AddButtons(node0Buttons)
+
+	return modal
+}
 
 func Node0Form(app *tview.Application, pages *tview.Pages) tview.Primitive {
 	nm := nmstate.New()
 	jsonNetState, err := nm.RetrieveNetState()
 	if err != nil {
-		panic(err)
+		dialogs.PanicDialog(app, err)
 	}
 
 	var netState tuiNet.NetState
 	if err = json.Unmarshal([]byte(jsonNetState), &netState); err != nil {
-		panic(err)
+		dialogs.PanicDialog(app, err)
 	}
 
 	ifaceTreeView, err := tuiNet.TreeView(netState, pages)
 	if err != nil {
-		panicDialog := tview.NewModal().
-			SetText(err.Error()).
-			AddButtons([]string{"Quit"}).
-			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-				app.Stop()
-			})
-		app.SetRoot(panicDialog, false)
-		panic(err)
+		dialogs.PanicDialog(app, err)
 	}
 
 	form := tview.NewForm().

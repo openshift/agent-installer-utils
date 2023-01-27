@@ -1,4 +1,4 @@
-package agent_tui
+package dialogs
 
 import (
 	"github.com/rivo/tview"
