@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gdamore/tcell/v2"
-	tuiNet "github.com/openshift/agent-installer-utils/tools/agent_tui/net"
+	"github.com/openshift/agent-installer-utils/tools/agent_tui/net"
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/newt"
 	"github.com/rivo/tview"
 )
@@ -16,7 +16,7 @@ const (
 	RENDEZVOUSLABEL   string = "Rendezvous IP Address"
 )
 
-func RegNodeModalForm(app *tview.Application, pages *tview.Pages) tview.Primitive {
+func RegNodeModalForm(app *tview.Application, pages *tview.Pages, validations *net.Validations) tview.Primitive {
 	statusView := tview.NewTextView()
 
 	statusView.SetBackgroundColor(newt.ColorGray).
@@ -28,43 +28,20 @@ func RegNodeModalForm(app *tview.Application, pages *tview.Pages) tview.Primitiv
 		SetDynamicColors(true)
 	statusView.SetScrollable(true).SetWrap(true)
 
-	goodConnectivity := false
-
 	regNodeConfigForm := tview.NewForm().
-		AddTextView(RENDEZVOUSLABEL, tuiNet.GetRendezvousHostIP(), 40, 1, true, false).
+		AddTextView(RENDEZVOUSLABEL, validations.RendezvousHostIP, 40, 1, true, false).
 		AddButton(CONNECTIVITYCHECK, func() {
 			statusView.Clear()
-			fmt.Fprintln(statusView, "Running connectivity checks. Please wait...")
 			go func() {
-				_, err := tuiNet.CheckRegistryConnectivity()
-				if err != nil {
-					goodConnectivity = false
-					fmt.Fprintf(statusView, "[red::b]Cannot reach release image at %s (%s)[black]\n", tuiNet.GetReleaseImageURL(), err)
-				} else {
-					goodConnectivity = true
-					fmt.Fprintf(statusView, "Successfully reached release image at %s \n", tuiNet.GetReleaseImageURL())
-				}
-
-				_, err = tuiNet.CheckRendezvousHostConnectivity()
-				if err != nil {
-					goodConnectivity = false
-					fmt.Fprintf(statusView, "[red::b]Failed to ping rendezvous host at %s (%s)[black]\n", tuiNet.GetRendezvousHostIP(), err)
-				} else {
-					goodConnectivity = true
-					fmt.Fprintf(statusView, "Successfully pinged rendezvous host at %s \n", tuiNet.GetRendezvousHostIP())
-				}
-
-				if !goodConnectivity {
-					fmt.Fprint(statusView, "[red::b]Connectivity checks failed [black] \n")
-				} else {
-					fmt.Fprint(statusView, "[green::b]Connectivity checks successful [black] \n")
-				}
+				fmt.Fprintln(statusView, "Running connectivity checks. Please wait...")
+				validations.CheckConnectivity()
+				updateStatusView(statusView, validations)
 				app.Draw()
 			}()
 		}). // TODO: Make the connectivity check screen
-		AddButton(NETCONFIGURE, tuiNet.NMTUIRunner(app, pages, nil)).
+		AddButton(NETCONFIGURE, net.NMTUIRunner(app, pages, nil)).
 		AddButton(DONE, func() {
-			if goodConnectivity {
+			if !validations.HasConnectivityIssue() {
 				app.Stop()
 			} else {
 				statusView.SetText("[red::b]Can't continue installation without a successful connectivity check")
@@ -78,6 +55,58 @@ func RegNodeModalForm(app *tview.Application, pages *tview.Pages) tview.Primitiv
 		SetBackgroundColor(newt.ColorGray).
 		SetBorderColor(tcell.ColorBlack)
 
+	// Prefill the status view if the initial validation checks performed when
+	// the application started up indicated there is an issue.
+	if validations.HasConnectivityIssue() {
+		updateStatusView(statusView, validations)
+	}
+
+	// Change navigation. By default Tab moves through form buttons. Now,
+	// * Left and Right keys moves through buttons in the form
+	// * Tab and Back Tab moves to status view
+	regNodeConfigForm.SetInputCapture(func(event *tcell.EventKey) (eventKey *tcell.EventKey) {
+		switch event.Key() {
+		case tcell.KeyTab:
+			app.SetFocus(statusView)
+			eventKey = nil
+		case tcell.KeyBacktab:
+			app.SetFocus(statusView)
+			eventKey = nil
+		case tcell.KeyRight:
+			if _, index := regNodeConfigForm.GetFocusedItemIndex(); index == (regNodeConfigForm.GetButtonCount() - 1) {
+				eventKey = nil
+			} else {
+				app.SetFocus(regNodeConfigForm.GetButton(index + 1))
+				eventKey = event
+			}
+		case tcell.KeyLeft:
+			if _, index := regNodeConfigForm.GetFocusedItemIndex(); index == 0 {
+				eventKey = nil
+			} else {
+				app.SetFocus(regNodeConfigForm.GetButton((index) - 1))
+				eventKey = event
+			}
+		default:
+			eventKey = event
+		}
+		return
+	})
+
+	// Register tab keys to switch to connectivity check form
+	statusView.SetInputCapture(func(event *tcell.EventKey) (eventKey *tcell.EventKey) {
+		switch event.Key() {
+		case tcell.KeyTab:
+			app.SetFocus(regNodeConfigForm)
+			eventKey = nil
+		case tcell.KeyBacktab:
+			app.SetFocus(regNodeConfigForm)
+			eventKey = nil
+		default:
+			eventKey = event
+		}
+		return
+	})
+
 	width := 80
 	return tview.NewFlex().
 		AddItem(nil, 0, 1, false).
@@ -87,4 +116,45 @@ func RegNodeModalForm(app *tview.Application, pages *tview.Pages) tview.Primitiv
 			AddItem(statusView, 0, 2, false).
 			AddItem(nil, 0, 1, false), width, 1, true).
 		AddItem(nil, 0, 1, false)
+}
+
+func updateStatusView(statusView *tview.TextView, validations *net.Validations) {
+	goodConnectivity := true
+
+	// fmt.Fprintln(statusView, "Running connectivity checks. Please wait...")
+
+	if validations.ReleaseImagePullError != "" {
+		goodConnectivity = false
+		fmt.Fprintf(statusView, "[red]Cannot reach release image at %s\n", validations.ReleaseImageURL)
+		fmt.Fprintf(statusView, "%s[black]\n", validations.ReleaseImagePullError)
+
+		if validations.ReleaseImageDomainNameResolutionError != "" {
+			fmt.Fprintf(statusView, "[red]nslookup release image host at %s failed: \n", validations.ReleaseImageDomainName)
+			fmt.Fprintf(statusView, "%s[black]\n", validations.ReleaseImageDomainNameResolutionError)
+		} else {
+			fmt.Fprintf(statusView, "nslookup release image host at %s successful\n", validations.ReleaseImageDomainName)
+		}
+
+		if validations.ReleaseImageHostPingError != "" {
+			fmt.Fprintf(statusView, "[red]ping release image host at %s failed: \n", validations.ReleaseImageDomainName)
+			fmt.Fprintf(statusView, "%s[black]\n", validations.ReleaseImageHostPingError)
+		} else {
+			fmt.Fprintf(statusView, "ping release image host at %s successful\n", validations.ReleaseImageDomainName)
+		}
+	} else {
+		fmt.Fprintf(statusView, "Successfully reached release image at %s \n", validations.ReleaseImageURL)
+	}
+
+	if validations.RendezvousHostPingError != "" {
+		goodConnectivity = false
+		fmt.Fprintf(statusView, "[red]Failed to ping rendezvous host at %s (%s)[black]\n", validations.RendezvousHostIP, validations.RendezvousHostPingError)
+	} else {
+		fmt.Fprintf(statusView, "Successfully pinged rendezvous host at %s \n", validations.RendezvousHostIP)
+	}
+
+	if goodConnectivity {
+		fmt.Fprintf(statusView, "[green]Connectivity checks successful[black]\n")
+	} else {
+		fmt.Fprint(statusView, "[red]Connectivity checks failed[black]\n")
+	}
 }

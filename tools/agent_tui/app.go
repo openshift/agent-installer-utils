@@ -2,6 +2,7 @@ package agent_tui
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -17,16 +18,16 @@ const (
 	NO  string = "No"
 )
 
-func activateNetworkConfigurationScreen(app *tview.Application, pages *tview.Pages) {
-	regNodeForm := forms.RegNodeModalForm(app, pages)
+func activateNetworkConfigurationScreen(app *tview.Application, pages *tview.Pages, validations *net.Validations) {
+	regNodeForm := forms.RegNodeModalForm(app, pages, validations)
 	pages.AddPage("regNodeConfig", regNodeForm, true, true)
 }
 
-func userPromptHandler(app *tview.Application, pages *tview.Pages, exitAfterTimeout bool) func(int, string) {
+func userPromptHandler(app *tview.Application, pages *tview.Pages, validations *net.Validations, exitAfterTimeout bool) func(int, string) {
 	return func(buttonIndex int, buttonLabel string) {
 		if buttonLabel == YES {
 			exitAfterTimeout = false
-			activateNetworkConfigurationScreen(app, pages)
+			activateNetworkConfigurationScreen(app, pages, validations)
 		} else {
 			app.Stop()
 		}
@@ -62,9 +63,13 @@ func App(app *tview.Application) {
 		SetBorder(false).
 		SetBackgroundColor(newt.ColorBlue)
 
-	_, err := net.ValidateConnectivity()
+	validations, err := net.NewValidations(os.Getenv("RELEASE_IMAGE"), os.Getenv("NODE_ZERO_IP"))
+	if err != nil {
+		panic(err)
+	}
+	validations.CheckConnectivity()
 
-	if err == nil {
+	if !validations.HasConnectivityIssue() {
 		// Connectivity checks passed. Give 20 seconds for user
 		// to start network configuration. If there is no input
 		// application exits.
@@ -74,7 +79,7 @@ func App(app *tview.Application) {
 		// like to change their network configuration.
 		view := tview.NewModal().
 			SetTextColor(tcell.ColorBlack).
-			SetDoneFunc(userPromptHandler(app, pages, exitAfterTimeout)).
+			SetDoneFunc(userPromptHandler(app, pages, validations, exitAfterTimeout)).
 			SetBackgroundColor(newt.ColorGray).
 			SetButtonTextColor(tcell.ColorBlack).
 			SetButtonBackgroundColor(tcell.ColorDarkGray)
@@ -90,7 +95,7 @@ func App(app *tview.Application) {
 	} else {
 		// Connectivity checks failed. Go directly to the
 		// network configuration screen.
-		activateNetworkConfigurationScreen(app, pages)
+		activateNetworkConfigurationScreen(app, pages, validations)
 	}
 
 	if err := app.SetRoot(pages, true).Run(); err != nil {

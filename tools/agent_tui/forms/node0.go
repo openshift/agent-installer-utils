@@ -6,6 +6,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/nmstate/nmstate/rust/src/go/nmstate/v2"
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/dialogs"
+	"github.com/openshift/agent-installer-utils/tools/agent_tui/net"
 	tuiNet "github.com/openshift/agent-installer-utils/tools/agent_tui/net"
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/newt"
 	"github.com/rivo/tview"
@@ -18,7 +19,7 @@ const (
 	NO        string = "No"
 )
 
-func isNode0Handler(app *tview.Application, pages *tview.Pages) func(int, string) {
+func isNode0Handler(app *tview.Application, pages *tview.Pages, validations *net.Validations) func(int, string) {
 	return func(buttonIndex int, buttonLabel string) {
 		if buttonLabel == YES {
 			// TODO: Print addressing, offer to configure, done
@@ -26,17 +27,17 @@ func isNode0Handler(app *tview.Application, pages *tview.Pages) func(int, string
 			node0Form := Node0Form(app, pages)
 			pages.AddPage("node0Form", node0Form, true, true)
 		} else {
-			regNodeForm := RegNodeModalForm(app, pages)
+			regNodeForm := RegNodeModalForm(app, pages, validations)
 			pages.AddPage("regNodeConfig", regNodeForm, true, true)
 		}
 	}
 }
 
-func IsNode0Modal(app *tview.Application, pages *tview.Pages) tview.Primitive {
+func IsNode0Modal(app *tview.Application, pages *tview.Pages, validations *net.Validations) tview.Primitive {
 	modal := tview.NewModal().
 		SetText("Do you wish for this node to be the one that runs the installation service (only one node may perform this function)?").
 		SetTextColor(tcell.ColorBlack).
-		SetDoneFunc(isNode0Handler(app, pages)).
+		SetDoneFunc(isNode0Handler(app, pages, validations)).
 		SetBackgroundColor(newt.ColorGray).
 		SetButtonTextColor(tcell.ColorBlack).
 		SetButtonBackgroundColor(tcell.ColorDarkGray)
