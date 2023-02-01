@@ -7,8 +7,10 @@ import (
 	"github.com/rivo/tview"
 )
 
-func App() {
-	app := tview.NewApplication()
+func App(app *tview.Application) {
+	if app == nil {
+		app = tview.NewApplication()
+	}
 	pages := tview.NewPages()
 
 	background := tview.NewBox().

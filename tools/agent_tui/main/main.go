@@ -5,5 +5,5 @@ import (
 )
 
 func main() {
-	agent_tui.App()
+	agent_tui.App(nil)
 }
