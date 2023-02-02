@@ -10,10 +10,11 @@ import (
 )
 
 const (
-	CONNECTIVITYCHECK string = "Check connectivity"
-	NETCONFIGURE      string = "Configure networking"
-	DONE              string = "Done"
-	RENDEZVOUSLABEL   string = "Rendezvous IP Address"
+	CONNECTIVITYCHECK   string = "Check Connectivity"
+	NETCONFIGURE        string = "Configure Networking"
+	DONE                string = "Done"
+	RENDEZVOUSLABEL     string = "Rendezvous IP Address"
+	RELEASE_IMAGE_LABEL string = "Release Image"
 )
 
 func RegNodeModalForm(app *tview.Application, pages *tview.Pages, validations *net.Validations) tview.Primitive {
@@ -28,8 +29,13 @@ func RegNodeModalForm(app *tview.Application, pages *tview.Pages, validations *n
 		SetDynamicColors(true)
 	statusView.SetScrollable(true).SetWrap(true)
 
+	releaseImageTextView := tview.NewTextView()
+	releaseImageTextView.SetLabel(RELEASE_IMAGE_LABEL + ": " + validations.ReleaseImageURL).
+		SetTextColor(tcell.ColorBlack)
+
 	regNodeConfigForm := tview.NewForm().
-		AddTextView(RENDEZVOUSLABEL, validations.RendezvousHostIP, 40, 1, true, false).
+		AddTextView(RELEASE_IMAGE_LABEL+": "+validations.ReleaseImageURL, "", 70, 1, true, false).
+		AddTextView(RENDEZVOUSLABEL+": "+validations.RendezvousHostIP, "", 70, 1, true, false).
 		AddButton(CONNECTIVITYCHECK, func() {
 			statusView.Clear()
 			go func() {
@@ -50,10 +56,10 @@ func RegNodeModalForm(app *tview.Application, pages *tview.Pages, validations *n
 	regNodeConfigForm.
 		SetLabelColor(tcell.ColorBlack).
 		SetBorder(true).
+		SetBorderColor(tcell.ColorBlack).
 		SetTitle("Agent-based Installer Network Connectivity Check").
 		SetTitleColor(tcell.ColorBlack).
-		SetBackgroundColor(newt.ColorGray).
-		SetBorderColor(tcell.ColorBlack)
+		SetBackgroundColor(newt.ColorGray)
 
 	// Prefill the status view if the initial validation checks performed when
 	// the application started up indicated there is an issue.
@@ -66,21 +72,17 @@ func RegNodeModalForm(app *tview.Application, pages *tview.Pages, validations *n
 	// * Tab and Back Tab moves to status view
 	regNodeConfigForm.SetInputCapture(func(event *tcell.EventKey) (eventKey *tcell.EventKey) {
 		switch event.Key() {
-		case tcell.KeyTab:
-			app.SetFocus(statusView)
-			eventKey = nil
-		case tcell.KeyBacktab:
-			app.SetFocus(statusView)
-			eventKey = nil
-		case tcell.KeyRight:
+		case tcell.KeyTab, tcell.KeyRight:
 			if _, index := regNodeConfigForm.GetFocusedItemIndex(); index == (regNodeConfigForm.GetButtonCount() - 1) {
+				app.SetFocus(statusView)
 				eventKey = nil
 			} else {
 				app.SetFocus(regNodeConfigForm.GetButton(index + 1))
 				eventKey = event
 			}
-		case tcell.KeyLeft:
+		case tcell.KeyBacktab, tcell.KeyLeft:
 			if _, index := regNodeConfigForm.GetFocusedItemIndex(); index == 0 {
+				app.SetFocus(statusView)
 				eventKey = nil
 			} else {
 				app.SetFocus(regNodeConfigForm.GetButton((index) - 1))
@@ -95,10 +97,7 @@ func RegNodeModalForm(app *tview.Application, pages *tview.Pages, validations *n
 	// Register tab keys to switch to connectivity check form
 	statusView.SetInputCapture(func(event *tcell.EventKey) (eventKey *tcell.EventKey) {
 		switch event.Key() {
-		case tcell.KeyTab:
-			app.SetFocus(regNodeConfigForm)
-			eventKey = nil
-		case tcell.KeyBacktab:
+		case tcell.KeyTab, tcell.KeyBacktab, tcell.KeyLeft, tcell.KeyRight:
 			app.SetFocus(regNodeConfigForm)
 			eventKey = nil
 		default:
