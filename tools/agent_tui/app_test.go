@@ -18,50 +18,83 @@ func TestInitialScreen(t *testing.T) {
 			"Yes     No")
 }
 
-func TestInsertInvalidRendezvousIP(t *testing.T) {
-	app := NewAppTester(t)
-	defer app.Stop()
+func TestRendezvousIP(t *testing.T) {
+	cases := []struct {
+		name  string
+		steps func(app *AppTester)
+	}{
+		{
+			name: "invalid ip",
+			steps: func(app *AppTester) {
+				app.Start().
+					// Move to the node form
+					SelectItem("No").
 
-	app.Start().
-		// Move to the node form
-		SelectItem("No").
+					// Insert an invalid ip
+					FocusItem("Rendezvous IP Address").
+					ScreenTypeText("256.256.256.256").ScreenPressTab().
+					WaitForScreenContent("The specified Rendezvous IP is not a valid IP Address")
+			},
+		},
+	}
+	for _, tc := range cases {
+		steps := tc.steps
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			app := NewAppTester(t)
+			defer app.Stop()
 
-		// Insert an invalid ip
-		FocusItem("Rendezvous IP Address").
-		ScreenTypeText("256.256.256.256").ScreenPressTab().
-		WaitForScreenContent("The specified Rendezvous IP is not a valid IP Address")
+			steps(app)
+		})
+	}
 }
 
 func TestCheckConnectivity(t *testing.T) {
-	app := NewAppTester(t)
-	defer app.Stop()
+	cases := []struct {
+		name  string
+		steps func(app *AppTester)
+	}{
+		{
+			name: "connectivity ok",
+			steps: func(app *AppTester) {
+				app.Start().
+					// Move to the node form
+					SelectItem("No").
 
-	app.Start().
-		// Move to the node form
-		SelectItem("No").
+					// Wait for the node form, and insert an invalid ip
+					FocusItem("Rendezvous IP Address").
+					ScreenTypeText("127.0.0.1").
 
-		// Wait for the node form, and insert an invalid ip
-		FocusItem("Rendezvous IP Address").
-		ScreenTypeText("127.0.0.1").
+					// Press "Check connectivity" button
+					SelectItem("Check connectivity").
+					WaitForScreenContent("Connectivity check successful")
+			},
+		},
+		{
+			name: "connectivity failure",
+			steps: func(app *AppTester) {
+				app.Start().
+					// Move to the node form
+					SelectItem("No").
 
-		// Press "Check connectivity" button
-		SelectItem("Check connectivity").
-		WaitForScreenContent("Connectivity check successful")
-}
+					// Wait for the node form, and insert an invalid ip
+					FocusItem("Rendezvous IP Address").
+					ScreenTypeText("196.0.0.1").
 
-func TestCheckConnectivityFailure(t *testing.T) {
-	app := NewAppTester(t)
-	defer app.Stop()
+					// Press "Check connectivity" button
+					SelectItem("Check connectivity").
+					WaitForScreenContent("Failed to connect to 196.0.0.1 (exit status 1)")
+			},
+		},
+	}
+	for _, tc := range cases {
+		steps := tc.steps
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			app := NewAppTester(t)
+			defer app.Stop()
 
-	app.Start().
-		// Move to the node form
-		SelectItem("No").
-
-		// Wait for the node form, and insert an invalid ip
-		FocusItem("Rendezvous IP Address").
-		ScreenTypeText("196.0.0.1").
-
-		// Press "Check connectivity" button
-		SelectItem("Check connectivity").
-		WaitForScreenContent("Failed to connect to 196.0.0.1 (exit status 1)")
+			steps(app)
+		})
+	}
 }
