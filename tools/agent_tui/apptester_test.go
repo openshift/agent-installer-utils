@@ -49,8 +49,9 @@ func NewAppTester(t *testing.T, debug ...bool) *AppTester {
 }
 
 // Starts a new Agent TUI in background
-func (a *AppTester) Start() {
+func (a *AppTester) Start() *AppTester {
 	go App(a.app)
+	return a
 }
 
 // Releases all the resources and stop the app
@@ -60,7 +61,7 @@ func (a *AppTester) Stop() {
 
 // FocusItem loops over the current focusable items until
 // it will find a primitive matching the specified caption
-func (a *AppTester) FocusItem(caption string) {
+func (a *AppTester) FocusItem(caption string) *AppTester {
 	a.t.Helper()
 	ok := assert.Eventually(a.t, func() bool {
 		p := a.app.GetFocus()
@@ -84,43 +85,47 @@ func (a *AppTester) FocusItem(caption string) {
 	if !ok {
 		assert.FailNow(a.t, fmt.Sprintf("widget with caption '%s' not found", caption))
 	}
+
+	return a
 }
 
 // SelectItem loops over the current focusable items until
 // it will find a primitive matching the specified caption.
 // If found, the item will be selected by pressing the Enter key
-func (a *AppTester) SelectItem(caption string) {
+func (a *AppTester) SelectItem(caption string) *AppTester {
 	a.t.Helper()
 	a.FocusItem(caption)
-	a.ScreenPressEnter()
+	return a.ScreenPressEnter()
 }
 
 // Moves the current cursor to the right
-func (a *AppTester) ScreenMoveCursorRight() {
-	a.screenPressKey(tcell.KeyRight)
+func (a *AppTester) ScreenMoveCursorRight() *AppTester {
+	return a.screenPressKey(tcell.KeyRight)
 }
 
 // Press the Tab key
-func (a *AppTester) ScreenPressTab() {
-	a.screenPressKey(tcell.KeyTAB)
+func (a *AppTester) ScreenPressTab() *AppTester {
+	return a.screenPressKey(tcell.KeyTAB)
 }
 
 // Press the Enter key
-func (a *AppTester) ScreenPressEnter() {
-	a.screenPressKey(tcell.KeyEnter)
+func (a *AppTester) ScreenPressEnter() *AppTester {
+	return a.screenPressKey(tcell.KeyEnter)
 }
 
-func (a *AppTester) screenPressKey(key tcell.Key) {
+func (a *AppTester) screenPressKey(key tcell.Key) *AppTester {
 	a.screen.InjectKey(key, rune(0), tcell.ModNone)
 	time.Sleep(1 * time.Millisecond)
+	return a
 }
 
 // Types a string at the current screen position and then press enter
-func (a *AppTester) ScreenTypeText(text string) {
+func (a *AppTester) ScreenTypeText(text string) *AppTester {
 	for _, c := range text {
 		a.screen.InjectKey(tcell.KeyRune, rune(c), tcell.ModNone)
 		time.Sleep(1 * time.Millisecond)
 	}
+	return a
 }
 
 func (a *AppTester) fetchScreenContent() []string {
@@ -144,7 +149,7 @@ func (a *AppTester) fetchScreenContent() []string {
 }
 
 // Wait until the current screen buffer contains the specified labels, or timeout
-func (a *AppTester) WaitForScreenContent(labels ...string) {
+func (a *AppTester) WaitForScreenContent(labels ...string) *AppTester {
 	a.t.Helper()
 	ok := assert.Eventually(a.t, func() bool {
 		lines := a.fetchScreenContent()
@@ -168,11 +173,13 @@ func (a *AppTester) WaitForScreenContent(labels ...string) {
 		a.DumpScreen()
 		assert.FailNow(a.t, fmt.Sprintf("Screen does not contain '%s'", labels))
 	}
+
+	return a
 }
 
 // Print the content of the current screen to the terminal in a raw format.
 // Just useful for debugging.
-func (a *AppTester) DumpScreen() {
+func (a *AppTester) DumpScreen() *AppTester {
 	cells, w, h := a.screen.GetContents()
 
 	rows := []string{"\n"}
@@ -188,4 +195,6 @@ func (a *AppTester) DumpScreen() {
 		}
 	}
 	a.t.Log(rows)
+
+	return a
 }
