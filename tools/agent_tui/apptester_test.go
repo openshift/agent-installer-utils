@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	waitTimeout = 5 * time.Second
+	waitTimeout = 35 * time.Second
 )
 
 // AppTester is a test helper class to allow writing integration tests.
@@ -58,42 +58,41 @@ func (a *AppTester) Stop() {
 	a.app.Stop()
 }
 
-// Waits until a button with the specified label becomes focused
-func (a *AppTester) WaitForButton(expectedLabel string) {
-	a.waitForItemWithLabel(expectedLabel, func(p tview.Primitive) string {
-		item, ok := p.(*tview.Button)
-		if !ok {
-			return ""
-		}
-		return item.GetLabel()
-	})
-}
-
-// Waits until a button with the specified label becomes focused
-func (a *AppTester) WaitForInputField(expectedLabel string) {
-	a.waitForItemWithLabel(expectedLabel, func(p tview.Primitive) string {
-		item, ok := p.(*tview.InputField)
-		if !ok {
-			return ""
-		}
-		return item.GetLabel()
-	})
-}
-
-func (a *AppTester) waitForItemWithLabel(expectedLabel string, labelGetter func(p tview.Primitive) string) {
+// FocusItem loops over the current focusable items until
+// it will find a primitive matching the specified caption
+func (a *AppTester) FocusItem(caption string) {
 	a.t.Helper()
 	ok := assert.Eventually(a.t, func() bool {
 		p := a.app.GetFocus()
-		if p == nil {
-			return false
+		switch v := p.(type) {
+		case *tview.Button:
+			if v.GetLabel() == caption {
+				return true
+			}
+		case *tview.InputField:
+			if v.GetLabel() == caption {
+				return true
+			}
+		default:
+			a.t.Logf("Item type %T not managed, skipping", v)
 		}
-		actualLabel := labelGetter(p)
-		return expectedLabel == actualLabel
-	}, waitTimeout, 10*time.Millisecond)
+		// Move to the next focusable item
+		a.ScreenPressTab()
+		return false
+	}, waitTimeout, 2*time.Millisecond)
 
 	if !ok {
-		assert.FailNow(a.t, fmt.Sprintf("widget with label '%s' not found", expectedLabel))
+		assert.FailNow(a.t, fmt.Sprintf("widget with caption '%s' not found", caption))
 	}
+}
+
+// SelectItem loops over the current focusable items until
+// it will find a primitive matching the specified caption.
+// If found, the item will be selected by pressing the Enter key
+func (a *AppTester) SelectItem(caption string) {
+	a.t.Helper()
+	a.FocusItem(caption)
+	a.ScreenPressEnter()
 }
 
 // Moves the current cursor to the right
@@ -162,9 +161,11 @@ func (a *AppTester) WaitForScreenContent(labels ...string) {
 			}
 		}
 		return true
-	}, waitTimeout, 10*time.Millisecond)
+		//Some tasks may take a while to display their output in the screen
+	}, 20*time.Second, 10*time.Millisecond)
 
 	if !ok {
+		a.DumpScreen()
 		assert.FailNow(a.t, fmt.Sprintf("Screen does not contain '%s'", labels))
 	}
 }
@@ -174,11 +175,17 @@ func (a *AppTester) WaitForScreenContent(labels ...string) {
 func (a *AppTester) DumpScreen() {
 	cells, w, h := a.screen.GetContents()
 
+	rows := []string{"\n"}
 	for y := 0; y < h; y++ {
+		row := ""
 		for x := 0; x < w; x++ {
 			c := cells[x+y*w]
-			fmt.Print(string(c.Bytes))
+			row += string(c.Bytes)
 		}
-		fmt.Println()
+		if strings.TrimSpace(row) != "" {
+			row += "\n"
+			rows = append(rows, row)
+		}
 	}
+	a.t.Log(rows)
 }
