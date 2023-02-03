@@ -37,8 +37,7 @@ func userPromptHandler(app *tview.Application, pages *tview.Pages, validations *
 func updateTimeoutText(app *tview.Application, view *tview.Modal, timeout int, exitAfterTimeout bool) {
 	i := 0
 	for i <= timeout {
-		// TODO: fix [black]. It doesn't match the grey text preceeding it.
-		modalText := fmt.Sprint("Agent-based installer connectivity checks passed. No additional network configuration is required. Do you still wish to modify the network configuration for this host?\n\n This prompt will timeout in [blue::b]", timeout-i, " [black]seconds.")
+		modalText := fmt.Sprint("Agent-based installer connectivity checks passed. No additional network configuration is required. Do you still wish to modify the network configuration for this host?\n\n This prompt will timeout in [blue]", timeout-i, " [black]seconds.")
 		app.QueueUpdateDraw(func() {
 			view.SetText(modalText)
 		})
@@ -65,9 +64,9 @@ func App(app *tview.Application) {
 
 	validations, err := net.NewValidations(os.Getenv("RELEASE_IMAGE"), os.Getenv("NODE_ZERO_IP"))
 	if err != nil {
-		panic(err)
+		dialogs.PanicDialog(app, err)
 	}
-	validations.CheckConnectivity()
+	validations.PrintConnectivityStatus(os.Stdout, false, true)
 
 	if !validations.HasConnectivityIssue() {
 		// Connectivity checks passed. Give 20 seconds for user
