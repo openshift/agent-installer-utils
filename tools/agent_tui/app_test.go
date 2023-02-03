@@ -2,6 +2,8 @@ package agent_tui
 
 import (
 	"testing"
+
+	"github.com/openshift/agent-installer-utils/tools/agent_tui/forms"
 )
 
 func TestInitialScreen(t *testing.T) {
@@ -28,10 +30,10 @@ func TestRendezvousIP(t *testing.T) {
 			steps: func(app *AppTester) {
 				app.Start().
 					// Move to the node form
-					SelectItem("No").
+					SelectItem(forms.NO).
 
 					// Insert an invalid ip
-					FocusItem("Rendezvous IP Address").
+					FocusItem(forms.RENDEZVOUSLABEL).
 					ScreenTypeText("256.256.256.256").ScreenPressTab().
 					WaitForScreenContent("The specified Rendezvous IP is not a valid IP Address")
 			},
@@ -59,14 +61,14 @@ func TestCheckConnectivity(t *testing.T) {
 			steps: func(app *AppTester) {
 				app.Start().
 					// Move to the node form
-					SelectItem("No").
+					SelectItem(forms.NO).
 
 					// Wait for the node form, and insert an invalid ip
-					FocusItem("Rendezvous IP Address").
+					FocusItem(forms.RENDEZVOUSLABEL).
 					ScreenTypeText("127.0.0.1").
 
 					// Press "Check connectivity" button
-					SelectItem("Check connectivity").
+					SelectItem(forms.CONNECTIVITYCHECK).
 					WaitForScreenContent("Connectivity check successful")
 			},
 		},
@@ -75,14 +77,14 @@ func TestCheckConnectivity(t *testing.T) {
 			steps: func(app *AppTester) {
 				app.Start().
 					// Move to the node form
-					SelectItem("No").
+					SelectItem(forms.NO).
 
 					// Wait for the node form, and insert an invalid ip
-					FocusItem("Rendezvous IP Address").
+					FocusItem(forms.RENDEZVOUSLABEL).
 					ScreenTypeText("196.0.0.1").
 
 					// Press "Check connectivity" button
-					SelectItem("Check connectivity").
+					SelectItem(forms.CONNECTIVITYCHECK).
 					WaitForScreenContent("Failed to connect to 196.0.0.1 (exit status 1)")
 			},
 		},
