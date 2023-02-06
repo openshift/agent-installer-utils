@@ -215,6 +215,27 @@ func (v *Validations) getReleaseImageHostPingSuccessText(forStdout bool) string 
 	return fmt.Sprintf("ping release image host at %s %ssuccess%s\n", v.ReleaseImageDomainName, getSuccessColor(forStdout), getNormalColor(forStdout))
 }
 
+func (v *Validations) numberOfErrors() int {
+	numberOfErrors := 0
+	if v.RendezvousHostPingError != "" {
+		numberOfErrors++
+	}
+	if v.ReleaseImagePullError != "" {
+		numberOfErrors++
+	}
+	if v.ReleaseImageDomainNameResolutionError != "" {
+		numberOfErrors++
+	}
+	if v.ReleaseImageHostPingError != "" {
+		numberOfErrors++
+	}
+	return numberOfErrors
+}
+
+func formatError(errorType string, thisErrorNumber int, totalNumberOfErrors int, forStdout bool) string {
+	return fmt.Sprintf("%v=== Error %v/%v: %v ===%v\n", getFailColor(forStdout), thisErrorNumber, totalNumberOfErrors, errorType, getNormalColor(forStdout))
+}
+
 func (v *Validations) PrintConnectivityStatus(w io.Writer, useCachedValues bool, forStdout bool) {
 	goodConnectivity := true
 	wg.Add(4)
@@ -260,21 +281,32 @@ func (v *Validations) PrintConnectivityStatus(w io.Writer, useCachedValues bool,
 	if goodConnectivity {
 		fmt.Fprintf(w, "%sConnectivity checks successful%s\n", getSuccessColor(forStdout), getNormalColor(forStdout))
 	} else {
-		fmt.Fprintf(w, "%sConnectivity checks failed%s\n", getFailColor(forStdout), getNormalColor(forStdout))
+		numberOfErrors := v.numberOfErrors()
+		checksString := "checks"
+		if numberOfErrors == 1 {
+			checksString = "check"
+		}
+		fmt.Fprintf(w, "%s%v connectivity %v failed%s\n", getFailColor(forStdout), numberOfErrors, checksString, getNormalColor(forStdout))
+		totalNumberOfErrors := v.numberOfErrors()
+		errorNumber := 0
 		if v.RendezvousHostPingError != "" {
-			fmt.Fprint(w, "=== ping rendezvous host error ===\n")
+			errorNumber++
+			fmt.Fprint(w, formatError("ping rendezvous host error", errorNumber, totalNumberOfErrors, forStdout))
 			fmt.Fprintf(w, "%s\n", v.RendezvousHostPingError)
 		}
 		if v.ReleaseImagePullError != "" {
-			fmt.Fprint(w, "=== Pull release image error ===\n")
+			errorNumber++
+			fmt.Fprint(w, formatError("Pull release image error", errorNumber, totalNumberOfErrors, forStdout))
 			fmt.Fprintf(w, "%s\n", v.ReleaseImagePullError)
 		}
 		if v.ReleaseImageDomainNameResolutionError != "" {
-			fmt.Fprint(w, "=== nslookup release image host error ===\n")
+			errorNumber++
+			fmt.Fprint(w, formatError("nslookup release image host error", errorNumber, totalNumberOfErrors, forStdout))
 			fmt.Fprintf(w, "%s\n", v.ReleaseImageDomainNameResolutionError)
 		}
 		if v.ReleaseImageHostPingError != "" {
-			fmt.Fprint(w, "=== ping release image host error ===\n")
+			errorNumber++
+			fmt.Fprint(w, formatError("ping release image host error", errorNumber, totalNumberOfErrors, forStdout))
 			fmt.Fprintf(w, "%s\n", v.ReleaseImageHostPingError)
 		}
 	}
