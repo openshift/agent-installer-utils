@@ -18,6 +18,11 @@ const (
 	NO  string = "No"
 )
 
+type Config struct {
+	ReleaseImageURL  string
+	RendezvousHostIP string
+}
+
 func activateNetworkConfigurationScreen(app *tview.Application, pages *tview.Pages, validations *net.Validations) {
 	regNodeForm := forms.RegNodeModalForm(app, pages, validations)
 	pages.AddPage("regNodeConfig", regNodeForm, true, true)
@@ -50,26 +55,7 @@ func updateTimeoutText(app *tview.Application, view *tview.Modal, timeout int, e
 	}
 }
 
-func checkRequiredEnvironmentVariablesArePresent() (string, string) {
-	releaseImage := os.Getenv("RELEASE_IMAGE")
-	nodeZeroIP := os.Getenv("NODE_ZERO_IP")
-	if releaseImage == "" || nodeZeroIP == "" {
-		if releaseImage == "" {
-			fmt.Println("RELEASE_IMAGE environment variable is not specified.")
-		}
-		if nodeZeroIP == "" {
-			fmt.Println("NODE_ZERO_IP environment variable is not specified.")
-		}
-		fmt.Println("Unable to perform connectivity checks.")
-		fmt.Println("Exiting agent-tui.")
-		os.Exit(1)
-	}
-	return releaseImage, nodeZeroIP
-}
-
-func App(app *tview.Application) {
-	releaseImage, nodeZeroIP := checkRequiredEnvironmentVariablesArePresent()
-
+func App(app *tview.Application, config Config) {
 	if app == nil {
 		app = tview.NewApplication()
 	}
@@ -81,7 +67,7 @@ func App(app *tview.Application) {
 		SetBorder(false).
 		SetBackgroundColor(newt.ColorBlue)
 
-	validations, err := net.NewValidations(releaseImage, nodeZeroIP)
+	validations, err := net.NewValidations(config.ReleaseImageURL, config.RendezvousHostIP)
 	if err != nil {
 		dialogs.PanicDialog(app, err)
 	}
