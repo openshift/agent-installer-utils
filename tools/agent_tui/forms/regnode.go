@@ -2,7 +2,6 @@ package forms
 
 import (
 	"fmt"
-	"net"
 
 	"github.com/gdamore/tcell/v2"
 	tuiNet "github.com/openshift/agent-installer-utils/tools/agent_tui/net"
@@ -27,34 +26,38 @@ func RegNodeModalForm(app *tview.Application, pages *tview.Pages) tview.Primitiv
 		SetTitleColor(tcell.ColorBlack)
 	statusView.SetTextColor(tcell.ColorBlack).
 		SetDynamicColors(true)
+	statusView.SetScrollable(true).SetWrap(true)
 
 	goodConnectivity := false
-	ipField := tview.NewInputField().
-		SetFieldWidth(40).
-		SetLabel(RENDEZVOUSLABEL)
-
-	ipField.SetDoneFunc(func(key tcell.Key) {
-		if net.ParseIP(ipField.GetText()) == nil {
-			statusView.SetText("[red::b]The specified Rendezvous IP is not a valid IP Address")
-		} else {
-			statusView.Clear()
-		}
-	})
 
 	regNodeConfigForm := tview.NewForm().
-		AddFormItem(ipField).
+		AddTextView(RENDEZVOUSLABEL, tuiNet.GetRendezvousHostIP(), 40, 1, true, false).
 		AddButton(CONNECTIVITYCHECK, func() {
 			statusView.Clear()
-			fmt.Fprintf(statusView, "Running connectivity check. Please wait...\n")
+			fmt.Fprintln(statusView, "Running connectivity checks. Please wait...")
 			go func() {
-				addr := ipField.GetText()
-				output, err := tuiNet.ValidateConnectivity(addr)
+				_, err := tuiNet.CheckRegistryConnectivity()
 				if err != nil {
 					goodConnectivity = false
-					fmt.Fprintf(statusView, "[red::b]Failed to connect to %s (%s)[black]\n%s", addr, err, tview.Escape(string(output)))
+					fmt.Fprintf(statusView, "[red::b]Cannot reach release image at %s (%s)[black]\n", tuiNet.GetReleaseImageURL(), err)
 				} else {
 					goodConnectivity = true
-					statusView.SetText("[green::b]Connectivity check successful")
+					fmt.Fprintf(statusView, "Successfully reached release image at %s \n", tuiNet.GetReleaseImageURL())
+				}
+
+				_, err = tuiNet.CheckRendezvousHostConnectivity()
+				if err != nil {
+					goodConnectivity = false
+					fmt.Fprintf(statusView, "[red::b]Failed to ping rendezvous host at %s (%s)[black]\n", tuiNet.GetRendezvousHostIP(), err)
+				} else {
+					goodConnectivity = true
+					fmt.Fprintf(statusView, "Successfully pinged rendezvous host at %s \n", tuiNet.GetRendezvousHostIP())
+				}
+
+				if !goodConnectivity {
+					fmt.Fprint(statusView, "[red::b]Connectivity checks failed [black] \n")
+				} else {
+					fmt.Fprint(statusView, "[green::b]Connectivity checks successful [black] \n")
 				}
 				app.Draw()
 			}()
@@ -70,7 +73,7 @@ func RegNodeModalForm(app *tview.Application, pages *tview.Pages) tview.Primitiv
 	regNodeConfigForm.
 		SetLabelColor(tcell.ColorBlack).
 		SetBorder(true).
-		SetTitle("Non installation orchestrating node configuration").
+		SetTitle("Agent-based Installer Network Connectivity Check").
 		SetTitleColor(tcell.ColorBlack).
 		SetBackgroundColor(newt.ColorGray).
 		SetBorderColor(tcell.ColorBlack)

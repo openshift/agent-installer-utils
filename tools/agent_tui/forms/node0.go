@@ -47,6 +47,8 @@ func IsNode0Modal(app *tview.Application, pages *tview.Pages) tview.Primitive {
 	return modal
 }
 
+// TODO: Do we still need this form if we are currently not allowing
+// the rendezvous host IP to be changed?
 func Node0Form(app *tview.Application, pages *tview.Pages) tview.Primitive {
 	nm := nmstate.New()
 	jsonNetState, err := nm.RetrieveNetState()
