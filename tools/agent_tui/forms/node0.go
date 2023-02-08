@@ -7,7 +7,6 @@ import (
 	"github.com/nmstate/nmstate/rust/src/go/nmstate/v2"
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/dialogs"
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/net"
-	tuiNet "github.com/openshift/agent-installer-utils/tools/agent_tui/net"
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/newt"
 	"github.com/rivo/tview"
 )
@@ -57,12 +56,12 @@ func Node0Form(app *tview.Application, pages *tview.Pages) tview.Primitive {
 		dialogs.PanicDialog(app, err)
 	}
 
-	var netState tuiNet.NetState
+	var netState net.NetState
 	if err = json.Unmarshal([]byte(jsonNetState), &netState); err != nil {
 		dialogs.PanicDialog(app, err)
 	}
 
-	ifaceTreeView, err := tuiNet.TreeView(netState, pages)
+	ifaceTreeView, err := net.TreeView(netState, pages)
 	if err != nil {
 		dialogs.PanicDialog(app, err)
 	}
@@ -72,7 +71,7 @@ func Node0Form(app *tview.Application, pages *tview.Pages) tview.Primitive {
 		AddButton(CONTINUE, func() {
 			app.Stop()
 		}).
-		AddButton(CONFIGURE, tuiNet.NMTUIRunner(app, pages, ifaceTreeView))
+		AddButton(CONFIGURE, net.NMTUIRunner(app, pages, ifaceTreeView))
 
 	form.SetBackgroundColor(newt.ColorGray)
 

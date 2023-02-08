@@ -17,10 +17,9 @@ const (
 
 func RegNodeModalForm(app *tview.Application, pages *tview.Pages, validations *net.Validations) tview.Primitive {
 	statusView := tview.NewTextView()
-
 	statusView.SetBackgroundColor(newt.ColorGray).
 		SetBorder(true).
-		SetBorderColor(tcell.ColorBlack).
+		SetBorderColor(newt.ColorBlue).
 		SetTitle("Status").
 		SetTitleColor(tcell.ColorBlack)
 	statusView.SetTextColor(tcell.ColorBlack).
@@ -28,27 +27,60 @@ func RegNodeModalForm(app *tview.Application, pages *tview.Pages, validations *n
 	statusView.SetScrollable(true).SetWrap(true)
 
 	releaseImageTextView := tview.NewTextView()
-	releaseImageTextView.SetLabel(RELEASE_IMAGE_LABEL + ": " + validations.ReleaseImageURL).
-		SetTextColor(tcell.ColorBlack)
+	releaseImageTextView.SetLabel("[black]" + RELEASE_IMAGE_LABEL + ": " + validations.ReleaseImageURL)
+	releaseImageTextView.SetTextColor(tcell.ColorBlack)
+	releaseImageTextView.SetDynamicColors(true)
+	releaseImageTextView.SetBackgroundColor(newt.ColorGray)
 
-	regNodeConfigForm := tview.NewForm().
-		AddTextView(RELEASE_IMAGE_LABEL+": "+validations.ReleaseImageURL, "", 70, 1, true, false).
-		AddTextView(RENDEZVOUSLABEL+": "+validations.RendezvousHostIP, "", 70, 1, true, false).
-		AddButton(CONNECTIVITYCHECK, func() {
+	//AddTextView(RELEASE_IMAGE_LABEL+": "+validations.ReleaseImageURL, "", 70, 1, true, false).
+	// AddTextView(RENDEZVOUSLABEL+": "+validations.RendezvousHostIP, "", 70, 1, true, false).
+	rendezvousIPTextView := tview.NewTextView()
+	rendezvousIPTextView.SetLabel("[black]" + RENDEZVOUSLABEL + ": " + validations.RendezvousHostIP).
+		SetTextColor(tcell.ColorBlack).
+		SetBackgroundColor(newt.ColorGray)
+
+	checkButton := tview.NewButton(CONNECTIVITYCHECK).
+		SetSelectedFunc(func() {
 			statusView.Clear()
 			go func() {
 				validations.PrintConnectivityStatus(statusView, false, false)
 				app.Draw()
 			}()
 		}).
-		AddButton(NETCONFIGURE, net.NMTUIRunner(app, pages, nil)).
-		AddButton(DONE, func() {
+		SetBackgroundColor(newt.ColorGray)
+
+	configureButton := tview.NewButton(NETCONFIGURE).
+		SetSelectedFunc(net.NMTUIRunner(app, pages, nil)).
+		SetBackgroundColor(newt.ColorGray)
+
+	doneButton := tview.NewButton(DONE).
+		SetSelectedFunc(func() {
 			if !validations.HasConnectivityIssue() {
 				app.Stop()
 			} else {
 				statusView.SetText("[red::b]Can't continue installation without a successful connectivity check")
 			}
-		})
+		}).
+		SetBackgroundColor(newt.ColorGray)
+
+	regNodeConfigForm := tview.NewForm()
+	// AddFormItem(releaseImageTextView).
+	// AddFormItem(rendezvousIPTextView).
+	// AddButton(CONNECTIVITYCHECK, func() {
+	// 	statusView.Clear()
+	// 	go func() {
+	// 		validations.PrintConnectivityStatus(statusView, false, false)
+	// 		app.Draw()
+	// 	}()
+	// }).
+	// AddButton(NETCONFIGURE, net.NMTUIRunner(app, pages, nil)).
+	// AddButton(DONE, func() {
+	// 	if !validations.HasConnectivityIssue() {
+	// 		app.Stop()
+	// 	} else {
+	// 		statusView.SetText("[red::b]Can't continue installation without a successful connectivity check")
+	// 	}
+	// })
 	regNodeConfigForm.
 		SetLabelColor(tcell.ColorBlack).
 		SetBorder(true).
@@ -102,13 +134,38 @@ func RegNodeModalForm(app *tview.Application, pages *tview.Pages, validations *n
 		return
 	})
 
+	// grid := tview.NewGrid().
+	// 	AddItem(releaseImageTextView, 0, 0, 0, 0, 0, 0, false).
+	// 	AddItem(rendezvousIPTextView, 2, 1, 0, 0, 0, 0, false).
+	// 	AddItem(checkButton, 3, 1, 0, 0, 0, 0, false).
+	// 	AddItem(configureButton, 3, 2, 0, 0, 0, 0, false).
+	// 	AddItem(doneButton, 3, 3, 0, 0, 0, 0, false).
+	// 	AddItem(statusView, 4, 1, 0, 0, 0, 0, false).
+	// 	SetRows(1, 1, 1, 1, 10, 1).
+	// 	SetColumns(20, 20, 20, 20).
+	// 	SetBorder(true).
+	// 	SetBorderColor(tcell.ColorBlue).
+	// 	SetTitle("Agent installer network boot setup").
+	// 	SetTitleColor(tcell.ColorBlack).
+	// 	SetBackgroundColor(newt.ColorGray)
+
+	flex := tview.NewFlex().SetDirection(tview.FlexRow).
+		AddItem(releaseImageTextView, 0, 1, false).
+		AddItem(rendezvousIPTextView, 0, 1, false).
+		AddItem(checkButton, 0, 1, false).
+		AddItem(configureButton, 0, 1, false).
+		AddItem(doneButton, 0, 1, false).
+		AddItem(statusView, 0, 10, false)
+
+	flex.SetBorder(true).
+		SetBorderColor(newt.ColorBlue).
+		SetTitle("Agent installer network boot setup").
+		SetTitleColor(tcell.ColorBlack).
+		SetBackgroundColor(newt.ColorGray)
+
 	width := 80
 	return tview.NewFlex().
 		AddItem(nil, 0, 1, false).
-		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
-			AddItem(nil, 0, 1, false).
-			AddItem(regNodeConfigForm, 0, 1, true).
-			AddItem(statusView, 0, 2, false).
-			AddItem(nil, 0, 1, false), width, 1, true).
+		AddItem(flex, width, 1, true).
 		AddItem(nil, 0, 1, false)
 }

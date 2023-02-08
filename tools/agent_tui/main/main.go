@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/openshift/agent-installer-utils/tools/agent_tui"
+	"github.com/openshift/agent-installer-utils/tools/agent_tui/checks"
 )
 
 func main() {
@@ -21,7 +22,7 @@ func main() {
 		fmt.Println("Exiting agent-tui.")
 		os.Exit(1)
 	}
-	config := agent_tui.Config{
+	config := checks.Config{
 		ReleaseImageURL:  releaseImage,
 		RendezvousHostIP: nodeZeroIP,
 	}

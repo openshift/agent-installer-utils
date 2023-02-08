@@ -1,4 +1,4 @@
-package net
+package checks
 
 import (
 	"testing"
@@ -40,7 +40,7 @@ func TestParseHostnameFromURL(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		hostname, err := parseHostnameFromURL(tc.urlToTest)
+		hostname, err := ParseHostnameFromURL(tc.urlToTest)
 		assert.Equal(t, tc.expectedError, err)
 		assert.Equal(t, tc.expectedHostname, hostname)
 	}

@@ -8,6 +8,7 @@ import (
 	"unicode"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/openshift/agent-installer-utils/tools/agent_tui/checks"
 	"github.com/rivo/tview"
 	"github.com/stretchr/testify/assert"
 )
@@ -50,7 +51,8 @@ func NewAppTester(t *testing.T, debug ...bool) *AppTester {
 
 // Starts a new Agent TUI in background
 func (a *AppTester) Start() *AppTester {
-	go App(a.app)
+	config := checks.Config{}
+	go App(a.app, config)
 	return a
 }
 
