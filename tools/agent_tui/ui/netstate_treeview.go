@@ -1,14 +1,15 @@
-package net
+package ui
 
 import (
 	"fmt"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/openshift/agent-installer-utils/tools/agent_tui/net"
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/newt"
 	"github.com/rivo/tview"
 )
 
-func getIfaceTree(iface Iface) *tview.TreeNode {
+func getIfaceTree(iface net.Iface) *tview.TreeNode {
 	root := tview.NewTreeNode(fmt.Sprintf("%s (%s)", iface.Name, iface.Type)).SetColor(tcell.ColorBlack)
 	root.AddChild(tview.NewTreeNode(fmt.Sprintf("MTU: %d", iface.MTU)).SetColor(tcell.ColorBlack))
 	root.AddChild(tview.NewTreeNode(fmt.Sprintf("State: %s", iface.State)).SetColor(tcell.ColorBlack))
@@ -31,9 +32,9 @@ func getIfaceTree(iface Iface) *tview.TreeNode {
 	return root
 }
 
-func getRouteTree(route Route) *tview.TreeNode {
+func getRouteTree(route net.Route) *tview.TreeNode {
 	var dest string
-	if isIPv4DefaultRoute(route.Destination) || isIPv6DefaultRoute(route.Destination) {
+	if net.IsIPv4DefaultRoute(route.Destination) || net.IsIPv6DefaultRoute(route.Destination) {
 		dest = "default"
 	} else {
 		dest = route.Destination
@@ -45,12 +46,12 @@ func getRouteTree(route Route) *tview.TreeNode {
 	return root
 }
 
-func ModalTreeView(netState NetState, pages *tview.Pages) (tview.Primitive, error) {
-	if pages == nil {
-		return nil, fmt.Errorf("Can't make a NetState treeView page for nil pages")
+func (u *UI) ModalTreeView(netState net.NetState) (tview.Primitive, error) {
+	if u.pages == nil {
+		return nil, fmt.Errorf("can't make a NetState treeView page for nil pages")
 	}
 
-	treeView, err := TreeView(netState, pages)
+	treeView, err := u.TreeView(netState)
 	if err != nil {
 		return nil, err
 	}
@@ -65,9 +66,9 @@ func ModalTreeView(netState NetState, pages *tview.Pages) (tview.Primitive, erro
 		AddItem(nil, 0, 1, false), err
 }
 
-func TreeView(netState NetState, pages *tview.Pages) (*tview.TreeView, error) {
-	if pages == nil {
-		return nil, fmt.Errorf("Can't make a NetState treeView page for nil pages")
+func (u *UI) TreeView(netState net.NetState) (*tview.TreeView, error) {
+	if u.pages == nil {
+		return nil, fmt.Errorf("can't make a NetState treeView page for nil pages")
 	}
 
 	root := tview.NewTreeNode(fmt.Sprintf("[black::b]%s", netState.Hostname.Running))
@@ -75,8 +76,8 @@ func TreeView(netState NetState, pages *tview.Pages) (*tview.TreeView, error) {
 		SetRoot(root).
 		SetCurrentNode(root).SetDoneFunc(
 		func(key tcell.Key) {
-			pageName, _ := pages.GetFrontPage()
-			pages.RemovePage(pageName)
+			u.pages.RemovePage("netstate")
+			u.returnFocusToChecks()
 		})
 
 	tree.SetTitle("Network Status").
@@ -88,8 +89,8 @@ func TreeView(netState NetState, pages *tview.Pages) (*tview.TreeView, error) {
 	tree.SetInputCapture(
 		func(event *tcell.EventKey) *tcell.EventKey {
 			if event.Rune() == 'q' {
-				pageName, _ := pages.GetFrontPage()
-				pages.RemovePage(pageName)
+				u.pages.RemovePage("netstate")
+				u.returnFocusToChecks()
 			}
 			return event
 		})
@@ -99,7 +100,7 @@ func TreeView(netState NetState, pages *tview.Pages) (*tview.TreeView, error) {
 
 	defaultIface, err := netState.GetDefaultNextHopIface()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to generate network state view: %w", err)
+		return nil, fmt.Errorf("failed to generate network state view: %w", err)
 	}
 	if defaultIface != nil {
 		interfaces.AddChild(getIfaceTree(*defaultIface).SetColor(tcell.ColorGreen))

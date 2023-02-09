@@ -79,7 +79,7 @@ type NetState struct {
 	Ifaces   []Iface     `json:"interfaces"`
 }
 
-func isIPv4DefaultRoute(destination string) (isDefaultRoute bool) {
+func IsIPv4DefaultRoute(destination string) (isDefaultRoute bool) {
 	switch destination {
 	case "0/0", "0.0.0.0/0":
 		isDefaultRoute = true
@@ -89,7 +89,7 @@ func isIPv4DefaultRoute(destination string) (isDefaultRoute bool) {
 	return
 }
 
-func isIPv6DefaultRoute(destination string) (isDefaultRoute bool) {
+func IsIPv6DefaultRoute(destination string) (isDefaultRoute bool) {
 	switch destination {
 	case "::/0":
 		isDefaultRoute = true
@@ -110,9 +110,9 @@ func (ns *NetState) getIfaceByName(ifaceName string) (r *Iface) {
 
 func (ns *NetState) GetDefaultNextHopIface() (r *Iface, err error) {
 	for _, route := range ns.Routes.Running {
-		if isIPv4DefaultRoute(route.Destination) || isIPv6DefaultRoute(route.Destination) {
+		if IsIPv4DefaultRoute(route.Destination) || IsIPv6DefaultRoute(route.Destination) {
 			if r != nil {
-				return nil, fmt.Errorf("Support for multiple default routes not yet implemented in agent-tui")
+				return nil, fmt.Errorf("support for multiple default routes not yet implemented in agent-tui")
 			}
 			r = ns.getIfaceByName(route.NextHopIface)
 		}

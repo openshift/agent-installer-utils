@@ -6,15 +6,16 @@ import (
 
 // Controller
 type Controller struct {
-	ui      *UI
-	channel chan checks.CheckResult
-	status  bool
+	ui                  *UI
+	channel             chan checks.CheckResult
+	activatedUserPrompt bool
 }
 
 func NewController(ui *UI) *Controller {
 	return &Controller{
-		channel: make(chan checks.CheckResult),
-		ui:      ui,
+		channel:             make(chan checks.CheckResult),
+		ui:                  ui,
+		activatedUserPrompt: false,
 	}
 }
 
@@ -26,13 +27,6 @@ func (c *Controller) Init() {
 	go func() {
 		for {
 			r := <-c.channel
-
-			// TODO: Check if all checks are passing, if yes
-			// switch UI to prompt user if they would like to
-			// still contine with configuration. exiting automatically
-			// after 20 seconds if no response.
-			c.status = r.Success
-			//...
 
 			//Update the widgets
 			switch r.Type {
@@ -61,6 +55,16 @@ func (c *Controller) Init() {
 					} else {
 						c.ui.markCheckFail(2, 0)
 						c.ui.appendNewErrorToDetails("ping failure", r.Details)
+					}
+				})
+			case checks.CheckTypeAllChecksSuccess:
+				c.ui.app.QueueUpdate(func() {
+					if r.Success {
+						if !c.activatedUserPrompt {
+							// Only activate user prompt once
+							c.ui.activateUserPrompt()
+							c.activatedUserPrompt = true
+						}
 					}
 				})
 			}

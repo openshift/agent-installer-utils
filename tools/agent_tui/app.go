@@ -96,7 +96,7 @@ func App(app *tview.Application, config checks.Config) {
 
 	controller := ui.NewController(appUI)
 
-	engine := checks.NewChecksEngine(controller.GetChan(), config)
+	engine := checks.NewEngine(controller.GetChan(), config)
 
 	controller.Init()
 	engine.Init()

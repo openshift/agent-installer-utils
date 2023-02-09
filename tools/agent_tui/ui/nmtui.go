@@ -1,4 +1,4 @@
-package net
+package ui
 
 import (
 	"encoding/json"
@@ -7,10 +7,11 @@ import (
 
 	"github.com/nmstate/nmstate/rust/src/go/nmstate/v2"
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/dialogs"
+	"github.com/openshift/agent-installer-utils/tools/agent_tui/net"
 	"github.com/rivo/tview"
 )
 
-func NMTUIRunner(app *tview.Application, pages *tview.Pages, treeView *tview.TreeView) func() {
+func (u *UI) NMTUIRunner(app *tview.Application, pages *tview.Pages, treeView *tview.TreeView) func() {
 	return func() {
 		app.Suspend(func() {
 			cmd := exec.Command("nmtui")
@@ -28,20 +29,20 @@ func NMTUIRunner(app *tview.Application, pages *tview.Pages, treeView *tview.Tre
 			dialogs.PanicDialog(app, err)
 		}
 
-		var netState NetState
+		var netState net.NetState
 		if err := json.Unmarshal([]byte(state), &netState); err != nil {
 			dialogs.PanicDialog(app, err)
 		}
 
 		//netStatePage, err := modalNetStateJSONPage(&netState, pages)
 		if treeView == nil {
-			netStatePage, err := ModalTreeView(netState, pages)
+			netStatePage, err := u.ModalTreeView(netState)
 			if err != nil {
 				dialogs.PanicDialog(app, err)
 			}
 			pages.AddPage("netstate", netStatePage, true, true)
 		} else {
-			updatedTreeView, err := TreeView(netState, pages)
+			updatedTreeView, err := u.TreeView(netState)
 			if err != nil {
 				dialogs.PanicDialog(app, err)
 			}
