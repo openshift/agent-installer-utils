@@ -17,15 +17,21 @@ const (
 )
 
 func (u *UI) markCheckSuccess(row int, col int) {
-	u.checks.SetCell(row, col, &tview.TableCell{Text: " ✓", Color: tcell.ColorGreen})
+	u.checks.SetCell(row, col, &tview.TableCell{
+		Text:            " ✓",
+		Color:           tcell.ColorLimeGreen,
+		BackgroundColor: newt.ColorGray})
 }
 
 func (u *UI) markCheckFail(row int, col int) {
-	u.checks.SetCell(row, col, &tview.TableCell{Text: " ✖", Color: tcell.ColorRed})
+	u.checks.SetCell(row, col, &tview.TableCell{
+		Text:            " ✖",
+		Color:           newt.ColorRed,
+		BackgroundColor: newt.ColorGray})
 }
 
 func (u *UI) appendNewErrorToDetails(heading string, errorString string) {
-	u.appendToDetails(fmt.Sprintf("%s%s:%s\n%s", "[red]", heading, "[white]", errorString))
+	u.appendToDetails(fmt.Sprintf("%s%s:%s\n%s", "[red]", heading, "[grey]", errorString))
 }
 
 func (u *UI) appendToDetails(newLines string) {
@@ -38,12 +44,14 @@ func (u *UI) appendToDetails(newLines string) {
 }
 
 func (u *UI) createCheckPage(config checks.Config) {
-	u.envVars = tview.NewTable()
-	// TODO: remove if rendezvous IP does not need to be checked
-	// u.config.SetCell(0, 0, &tview.TableCell{Text: " Rendezvous IP", Color: tcell.ColorWhite})
-	// u.config.SetCell(0, 1, &tview.TableCell{Text: config.RendezvousHostIP, Color: newt.ColorBlue})
-	u.envVars.SetCell(1, 0, &tview.TableCell{Text: " Release image URL", Color: tcell.ColorWhite})
-	u.envVars.SetCell(1, 1, &tview.TableCell{Text: config.ReleaseImageURL, Color: newt.ColorBlue})
+	u.envVars = tview.NewTextView()
+	u.envVars.SetBorder(true)
+	u.envVars.SetBorderColor(newt.ColorBlack)
+	u.envVars.SetBackgroundColor(newt.ColorGray)
+	u.envVars.SetTitleColor(newt.ColorBlack)
+	u.envVars.SetTitle("  Release image URL  ")
+	u.envVars.SetText("\n" + config.ReleaseImageURL)
+	u.envVars.SetTextColor(newt.ColorBlack)
 
 	releaseImageHostName, err := checks.ParseHostnameFromURL(config.ReleaseImageURL)
 	if err != nil {
@@ -51,40 +59,114 @@ func (u *UI) createCheckPage(config checks.Config) {
 	}
 	u.checks = tview.NewTable()
 	u.checks.SetBorder(true)
-	u.checks.SetTitle("Checks")
-	u.checks.SetCell(0, 0, &tview.TableCell{Text: " ?", Color: tcell.ColorWhite})
-	u.checks.SetCell(0, 1, &tview.TableCell{Text: "podman pull release image", Color: tcell.ColorWhite})
-	u.checks.SetCell(1, 0, &tview.TableCell{Text: " ?", Color: tcell.ColorWhite})
-	u.checks.SetCell(1, 1, &tview.TableCell{Text: "nslookup " + releaseImageHostName, Color: tcell.ColorWhite})
-	u.checks.SetCell(2, 0, &tview.TableCell{Text: " ?", Color: tcell.ColorWhite})
+	u.checks.SetTitle("  Checks  ")
+	u.checks.SetBorderColor(newt.ColorBlack)
+	u.checks.SetBackgroundColor(newt.ColorGray)
+	u.checks.SetTitleColor(newt.ColorBlack)
+	u.checks.SetCell(0, 0, &tview.TableCell{
+		Text:            " ?",
+		Color:           newt.ColorBlack,
+		BackgroundColor: newt.ColorGray})
+	u.checks.SetCell(0, 1, &tview.TableCell{
+		Text:            "podman pull release image",
+		Color:           newt.ColorBlack,
+		BackgroundColor: newt.ColorGray})
+	u.checks.SetCell(1, 0, &tview.TableCell{
+		Text:            " ?",
+		Color:           newt.ColorBlack,
+		BackgroundColor: newt.ColorGray})
+	u.checks.SetCell(1, 1, &tview.TableCell{
+		Text:            "nslookup " + releaseImageHostName,
+		Color:           newt.ColorBlack,
+		BackgroundColor: newt.ColorGray})
+	u.checks.SetCell(2, 0, &tview.TableCell{
+		Text:            " ?",
+		Color:           newt.ColorBlack,
+		BackgroundColor: newt.ColorGray})
 	if releaseImageHostName == "quay.io" {
-		u.checks.SetCell(2, 1, &tview.TableCell{Text: "quay.io does not respond to ping, ping skipped", Color: tcell.ColorWhite})
+		u.checks.SetCell(2, 1, &tview.TableCell{
+			Text:            "quay.io does not respond to ping, ping skipped",
+			Color:           newt.ColorBlack,
+			BackgroundColor: newt.ColorGray})
 	} else {
-		u.checks.SetCell(2, 1, &tview.TableCell{Text: "ping " + releaseImageHostName, Color: tcell.ColorWhite})
+		u.checks.SetCell(2, 1, &tview.TableCell{
+			Text:            "ping " + releaseImageHostName,
+			Color:           newt.ColorBlack,
+			BackgroundColor: newt.ColorGray})
 	}
 
 	u.details = tview.NewTextView()
 	u.details.SetBorder(true)
-	u.details.SetTitle("Check Errors")
-	u.details.SetTitleColor(tcell.ColorWhite)
+	u.details.SetTitle("  Check Errors  ")
 	u.details.SetDynamicColors(true)
+	u.details.SetBorderColor(newt.ColorBlack)
+	u.details.SetBackgroundColor(newt.ColorGray)
+	u.details.SetTitleColor(newt.ColorBlack)
 
 	u.form = tview.NewForm()
 	u.form.SetBorder(false)
-	u.form.AddButton("Configure network", u.NMTUIRunner(u.app, u.pages, nil))
+	u.form.SetBackgroundColor(newt.ColorGray)
 	u.form.SetButtonsAlign(tview.AlignCenter)
-	// u.buttons.SetBackgroundColor(tcell.ColorBlack)
+	u.form.AddButton("<Configure network>", u.NMTUIRunner(nil))
+	u.form.AddButton("<Quit>", func() {
+		u.app.Stop()
+	})
+	u.form.SetButtonActivatedStyle(tcell.StyleDefault.Background(newt.ColorRed).
+		Foreground(newt.ColorGray))
+	u.form.SetButtonStyle(tcell.StyleDefault.Background(newt.ColorGray).
+		Foreground(newt.ColorBlack))
+	u.form.SetInputCapture(func(event *tcell.EventKey) (eventKey *tcell.EventKey) {
+		switch event.Key() {
+		case tcell.KeyTab, tcell.KeyRight:
+			if _, index := u.form.GetFocusedItemIndex(); index == (u.form.GetButtonCount() - 1) {
+				u.app.SetFocus(u.form.GetButton(0))
+				eventKey = nil
+			} else {
+				u.app.SetFocus(u.form.GetButton(index + 1))
+				eventKey = event
+			}
+		case tcell.KeyBacktab, tcell.KeyLeft:
+			if _, index := u.form.GetFocusedItemIndex(); index == 0 {
+				u.app.SetFocus(u.form.GetButton(1))
+				eventKey = nil
+			} else {
+				u.app.SetFocus(u.form.GetButton((index) - 1))
+				eventKey = event
+			}
+		case tcell.KeyEsc:
+			u.app.Stop()
+		default:
+			eventKey = event
+		}
+		return
+	})
 
-	u.grid = tview.NewGrid().SetRows(3, 5, 0, 3).SetColumns(0).
+	// SetRows(number-of-lines-to-give-1st-row,
+	//         number-of-lines-to-give-2nd-row,..etc)
+	// 0 means fill
+	u.grid = tview.NewGrid().SetRows(5, 5, 0, 3).SetColumns(0).
 		AddItem(u.envVars, 0, 0, 1, 1, 0, 0, false).
 		AddItem(u.checks, 1, 0, 1, 1, 0, 0, false).
 		AddItem(u.details, 2, 0, 1, 1, 0, 0, false).
 		AddItem(u.form, 3, 0, 1, 1, 0, 0, false)
-	u.grid.SetTitle("Agent installer network boot setup")
-	u.grid.SetTitleColor(tcell.ColorWhite)
+	u.grid.SetTitle("  Agent installer network boot setup  ")
+	u.grid.SetTitleColor(newt.ColorRed)
 	u.grid.SetBorder(true)
+	u.grid.SetBackgroundColor(newt.ColorGray)
+	u.grid.SetBorderColor(tcell.ColorBlack)
 
-	u.pages.AddPage("checkScreen", u.grid, true, true)
+	width := 80
+	flex := tview.NewFlex().
+		AddItem(nil, 0, 1, false).
+		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
+			AddItem(nil, 0, 1, false).
+			AddItem(u.grid, 0, 8, true).
+			AddItem(nil, 0, 1, false), width, 1, true).
+		AddItem(nil, 0, 1, false)
+
+	u.pages.SetBackgroundColor(newt.ColorBlue)
+
+	u.pages.AddPage("checkScreen", flex, true, true)
 
 	u.app.SetRoot(u.pages, true).SetFocus(u.form).EnableMouse(true)
 }

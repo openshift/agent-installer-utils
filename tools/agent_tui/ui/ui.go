@@ -9,7 +9,7 @@ type UI struct {
 	app              *tview.Application
 	pages            *tview.Pages
 	grid             *tview.Grid     // layout for the checks page
-	envVars          *tview.Table    // displays release image URL
+	envVars          *tview.TextView // displays release image URL
 	checks           *tview.Table    // summary of all checks
 	details          *tview.TextView // where errors from checks are displayed
 	form             *tview.Form     // contains "Configure network" button
