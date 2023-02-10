@@ -8,6 +8,14 @@ import (
 type Controller struct {
 	ui      *UI
 	channel chan checks.CheckResult
+	state   State
+}
+
+type State struct {
+	// default value is false
+	ReleaseImagePullSuccess                 bool
+	ReleaseImageDomainNameResolutionSuccess bool
+	ReleaseImageHostPingSuccess             bool
 }
 
 func NewController(ui *UI) *Controller {
@@ -21,10 +29,34 @@ func (c *Controller) GetChan() chan checks.CheckResult {
 	return c.channel
 }
 
+func (c *Controller) AllChecksSuccess() bool {
+	if c.state.ReleaseImagePullSuccess &&
+		c.state.ReleaseImageDomainNameResolutionSuccess &&
+		c.state.ReleaseImageHostPingSuccess {
+		return true
+	} else {
+		return false
+	}
+}
+
+func (c *Controller) updateState(cr checks.CheckResult) {
+	switch cr.Type {
+	case checks.CheckTypeReleaseImagePull:
+		c.state.ReleaseImagePullSuccess = cr.Success
+	case checks.CheckTypeReleaseImageHostDNS:
+		c.state.ReleaseImageDomainNameResolutionSuccess = cr.Success
+	case checks.CheckTypeReleaseImageHostPing:
+		c.state.ReleaseImageHostPingSuccess = cr.Success
+	}
+}
+
 func (c *Controller) Init() {
 	go func() {
 		for {
+			// select {
+			// case
 			r := <-c.channel
+			c.updateState(r)
 
 			//Update the widgets
 			switch r.Type {
@@ -55,18 +87,21 @@ func (c *Controller) Init() {
 						c.ui.appendNewErrorToDetails("ping failure", r.Details)
 					}
 				})
-			case checks.CheckTypeAllChecksSuccess:
+			}
+
+			if c.AllChecksSuccess() {
 				c.ui.app.QueueUpdate(func() {
-					if r.Success {
-						if !c.ui.activatedUserPrompt {
-							// Only activate user prompt once
-							c.ui.activateUserPrompt()
-							c.ui.activatedUserPrompt = true
-						}
+					if !c.ui.activatedUserPrompt {
+						// Only activate user prompt once
+						c.ui.activateUserPrompt()
+						c.ui.activatedUserPrompt = true
 					}
 				})
 			}
-			c.ui.app.Draw()
+			c.ui.app.QueueUpdateDraw(func() {})
+			// default:
+			// 	c.ui.app.QueueUpdateDraw(func() {})
+			// }
 		}
 	}()
 }

@@ -14,25 +14,11 @@ func TestChecksPage(t *testing.T) {
 		steps  func(app *AppTester)
 	}{
 		{
-			name: "success, all checks pass, verify checks screen content",
-			steps: func(app *AppTester) {
-				appConfig := checks.Config{
-					ReleaseImageURL: "quay.io/openshift-release-dev/ocp-release:4.12.2-x86_64",
-				}
-				app.Start(appConfig).
-					WaitForScreenContent(
-						"Agent installer network boot setup",
-						appConfig.ReleaseImageURL,
-						"✓ podman pull release image",
-						"✓ nslookup quay.io",
-						"✓ quay.io does not respond to ping, ping skipped")
-			},
-		},
-		{
 			name: "success, all checks pass, verify app switches to prompt with timeout",
 			steps: func(app *AppTester) {
 				appConfig := checks.Config{
 					ReleaseImageURL: "quay.io/openshift-release-dev/ocp-release:4.12.2-x86_64",
+					LogPath:         "/tmp/delete-me",
 				}
 				tester := app.Start(appConfig)
 				// all checks should pass and we should be prompted
@@ -59,6 +45,7 @@ func TestChecksPage(t *testing.T) {
 			steps: func(app *AppTester) {
 				appConfig := checks.Config{
 					ReleaseImageURL: "localhost:8888/missing",
+					LogPath:         "/tmp/delete-me",
 				}
 				tester := app.Start(appConfig)
 				tester.WaitForScreenContent(

@@ -12,7 +12,6 @@ import (
 
 const (
 	CONFIGURE_NETWORK_LABEL string = "Configure Networking"
-	RENDEZVOUS_IP_LABEL     string = "Rendezvous IP Address"
 	RELEASE_IMAGE_LABEL     string = "Release Image"
 	CONFIGURE_BUTTON        string = "<Configure network>"
 	QUIT_BUTTON             string = "<Quit>"

@@ -3,20 +3,22 @@ package checks
 import (
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 const (
 	CheckTypeReleaseImagePull     = "ReleaseImagePull"
 	CheckTypeReleaseImageHostDNS  = "ReleaseImageHostDNS"
 	CheckTypeReleaseImageHostPing = "ReleaseImageHostPing"
-	CheckTypeAllChecksSuccess     = "AllChecksSuccess"
 )
 
 type Config struct {
-	ReleaseImageURL  string
-	RendezvousHostIP string
+	ReleaseImageURL string
+	LogPath         string
 }
 
 // ChecksEngine is the model part, and is composed by a number
@@ -39,81 +41,24 @@ type Check struct {
 type Engine struct {
 	checks  []*Check
 	channel chan CheckResult
-	state   *State
+	logger  *logrus.Logger
 }
 
 type checkFunction func() ([]byte, error)
 
-type State struct {
-	// default value is false
-	// RendezvousHostPingSuccess               bool
-	ReleaseImagePullSuccess                 bool
-	ReleaseImageDomainNameResolutionSuccess bool
-	ReleaseImageHostPingSuccess             bool
-}
-
-func (e *Engine) AllChecksSucess() bool {
-	if e.state.ReleaseImagePullSuccess &&
-		// e.state.RendezvousHostPingSuccess &&
-		e.state.ReleaseImageDomainNameResolutionSuccess &&
-		e.state.ReleaseImageHostPingSuccess {
-		return true
-	} else {
-		return false
-	}
-}
-
-func (e *Engine) updateState(cr CheckResult) {
-	switch cr.Type {
-	case CheckTypeReleaseImagePull:
-		e.state.ReleaseImagePullSuccess = cr.Success
-	case CheckTypeReleaseImageHostDNS:
-		e.state.ReleaseImageDomainNameResolutionSuccess = cr.Success
-	case CheckTypeReleaseImageHostPing:
-		e.state.ReleaseImageHostPingSuccess = cr.Success
-	}
-}
-
 func (e *Engine) createCheckResult(f checkFunction, checkType string) CheckResult {
 	output, err := f()
-	var result CheckResult
-	if err != nil {
-		result = CheckResult{
-			Type:    checkType,
-			Success: false,
-			Details: string(output),
-		}
+	result := CheckResult{
+		Type:    checkType,
+		Success: err == nil,
+		Details: string(output),
+	}
+	if result.Success {
+		e.logger.Infof("%s check successful: %s", checkType, result.Details)
 	} else {
-		result = CheckResult{
-			Type:    checkType,
-			Success: true,
-			Details: string(output),
-		}
+		e.logger.Warnf("%s check failed with error: %s", checkType, result.Details)
 	}
-	e.updateState(result)
 	return result
-}
-
-func (e *Engine) newAllSuccessCheck() *Check {
-	ctype := CheckTypeAllChecksSuccess
-	return &Check{
-		Type: ctype,
-		Freq: 3 * time.Second,
-		Run: func(c chan CheckResult, freq time.Duration) {
-			for {
-				checkFunction := func() ([]byte, error) {
-					if !e.AllChecksSucess() {
-						errorString := "not all checks are successful"
-						return []byte(errorString), errors.New(errorString)
-					} else {
-						return nil, nil
-					}
-				}
-				c <- e.createCheckResult(checkFunction, ctype)
-				time.Sleep(freq)
-			}
-		},
-	}
 }
 
 func (e *Engine) newRegistryImagePullCheck(releaseImageURL string) *Check {
@@ -176,25 +121,34 @@ func (e *Engine) newReleaseImageHostPingCheck(hostname string) *Check {
 }
 
 func NewEngine(c chan CheckResult, config Config) *Engine {
-	state := &State{}
 	checks := []*Check{}
+	logger := logrus.New()
+
+	// initialize log
+	f, err := os.OpenFile(config.LogPath, os.O_RDWR|os.O_CREATE, 0644)
+	if errors.Is(err, os.ErrNotExist) {
+		// handle the case where the file doesn't exist
+		fmt.Printf("Error creating log file %s\n", config.LogPath)
+	}
+	logger.Out = f
+
+	logger.Infof("Release Image URL: %s", config.ReleaseImageURL)
 
 	hostname, err := ParseHostnameFromURL(config.ReleaseImageURL)
 	if err != nil {
-		fmt.Printf("Error parsing hostname from releaseImageURL: %s\n", config.ReleaseImageURL)
+		logger.Fatalf("Error parsing hostname from releaseImageURL: %s\n", config.ReleaseImageURL)
 	}
 
 	e := &Engine{
 		checks:  checks,
 		channel: c,
-		state:   state,
+		logger:  logger,
 	}
 
 	e.checks = append(e.checks,
 		e.newRegistryImagePullCheck(config.ReleaseImageURL),
 		e.newReleaseImageHostDNSCheck(hostname),
-		e.newReleaseImageHostPingCheck(hostname),
-		e.newAllSuccessCheck())
+		e.newReleaseImageHostPingCheck(hostname))
 
 	return e
 }

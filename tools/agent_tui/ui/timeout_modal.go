@@ -34,6 +34,7 @@ func (u *UI) createTimeoutModal(config checks.Config) {
 		SetBackgroundColor(newt.ColorGray).
 		SetButtonTextColor(tcell.ColorBlack).
 		SetButtonBackgroundColor(tcell.ColorDarkGray)
+	u.timeoutModal.SetBorderColor(newt.ColorBlack)
 
 	userPromptButtons := []string{YES_BUTTON, NO_BUTTON}
 	u.timeoutModal.AddButtons(userPromptButtons)
