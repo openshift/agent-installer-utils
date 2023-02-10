@@ -20,7 +20,7 @@ type State struct {
 
 func NewController(ui *UI) *Controller {
 	return &Controller{
-		channel: make(chan checks.CheckResult),
+		channel: make(chan checks.CheckResult, 10),
 		ui:      ui,
 	}
 }
@@ -53,8 +53,6 @@ func (c *Controller) updateState(cr checks.CheckResult) {
 func (c *Controller) Init() {
 	go func() {
 		for {
-			// select {
-			// case
 			r := <-c.channel
 			c.updateState(r)
 
@@ -99,9 +97,6 @@ func (c *Controller) Init() {
 				})
 			}
 			c.ui.app.QueueUpdateDraw(func() {})
-			// default:
-			// 	c.ui.app.QueueUpdateDraw(func() {})
-			// }
 		}
 	}()
 }
