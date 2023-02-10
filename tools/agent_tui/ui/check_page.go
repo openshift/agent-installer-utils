@@ -107,7 +107,13 @@ func (u *UI) createCheckPage(config checks.Config) {
 	u.form.SetBorder(false)
 	u.form.SetBackgroundColor(newt.ColorGray)
 	u.form.SetButtonsAlign(tview.AlignCenter)
-	u.form.AddButton("<Configure network>", u.NMTUIRunner(nil))
+	u.form.AddButton("<Configure network>", func() {
+		// Do not display the timeout prompt if the user
+		// is already interacting with the ui
+		u.activatedUserPrompt = true
+		f := u.NMTUIRunner(nil)
+		f()
+	})
 	u.form.AddButton("<Quit>", func() {
 		u.app.Stop()
 	})

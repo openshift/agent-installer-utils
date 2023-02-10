@@ -6,15 +6,16 @@ import (
 )
 
 type UI struct {
-	app              *tview.Application
-	pages            *tview.Pages
-	grid             *tview.Grid     // layout for the checks page
-	envVars          *tview.TextView // displays release image URL
-	checks           *tview.Table    // summary of all checks
-	details          *tview.TextView // where errors from checks are displayed
-	form             *tview.Form     // contains "Configure network" button
-	timeoutModal     *tview.Modal    // popup window that times out
-	exitAfterTimeout bool
+	app                 *tview.Application
+	pages               *tview.Pages
+	grid                *tview.Grid     // layout for the checks page
+	envVars             *tview.TextView // displays release image URL
+	checks              *tview.Table    // summary of all checks
+	details             *tview.TextView // where errors from checks are displayed
+	form                *tview.Form     // contains "Configure network" button
+	timeoutModal        *tview.Modal    // popup window that times out
+	exitAfterTimeout    bool
+	activatedUserPrompt bool // activate user prompt only once
 }
 
 func NewUI(config checks.Config) *UI {

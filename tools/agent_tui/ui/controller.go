@@ -6,16 +6,14 @@ import (
 
 // Controller
 type Controller struct {
-	ui                  *UI
-	channel             chan checks.CheckResult
-	activatedUserPrompt bool
+	ui      *UI
+	channel chan checks.CheckResult
 }
 
 func NewController(ui *UI) *Controller {
 	return &Controller{
-		channel:             make(chan checks.CheckResult),
-		ui:                  ui,
-		activatedUserPrompt: false,
+		channel: make(chan checks.CheckResult),
+		ui:      ui,
 	}
 }
 
@@ -60,10 +58,10 @@ func (c *Controller) Init() {
 			case checks.CheckTypeAllChecksSuccess:
 				c.ui.app.QueueUpdate(func() {
 					if r.Success {
-						if !c.activatedUserPrompt {
+						if !c.ui.activatedUserPrompt {
 							// Only activate user prompt once
 							c.ui.activateUserPrompt()
-							c.activatedUserPrompt = true
+							c.ui.activatedUserPrompt = true
 						}
 					}
 				})
