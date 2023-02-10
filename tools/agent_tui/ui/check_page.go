@@ -14,6 +14,8 @@ const (
 	CONFIGURE_NETWORK_LABEL string = "Configure Networking"
 	RENDEZVOUS_IP_LABEL     string = "Rendezvous IP Address"
 	RELEASE_IMAGE_LABEL     string = "Release Image"
+	CONFIGURE_BUTTON        string = "<Configure network>"
+	QUIT_BUTTON             string = "<Quit>"
 )
 
 func (u *UI) markCheckSuccess(row int, col int) {
@@ -107,14 +109,14 @@ func (u *UI) createCheckPage(config checks.Config) {
 	u.form.SetBorder(false)
 	u.form.SetBackgroundColor(newt.ColorGray)
 	u.form.SetButtonsAlign(tview.AlignCenter)
-	u.form.AddButton("<Configure network>", func() {
+	u.form.AddButton(CONFIGURE_BUTTON, func() {
 		// Do not display the timeout prompt if the user
 		// is already interacting with the ui
 		u.activatedUserPrompt = true
 		f := u.NMTUIRunner(nil)
 		f()
 	})
-	u.form.AddButton("<Quit>", func() {
+	u.form.AddButton(QUIT_BUTTON, func() {
 		u.app.Stop()
 	})
 	u.form.SetButtonActivatedStyle(tcell.StyleDefault.Background(newt.ColorRed).

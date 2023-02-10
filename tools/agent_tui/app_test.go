@@ -1,97 +1,97 @@
 package agent_tui
 
-// TODO: update tests
-// func TestInitialScreen(t *testing.T) {
-// 	app := NewAppTester(t)
-// 	defer app.Stop()
+import (
+	"testing"
 
-// 	app.Start().
-// 		WaitForScreenContent(
-// 			"Do you wish for this node",
-// 			"to be the one that runs",
-// 			"the installation service",
-// 			"(only one node may perform",
-// 			"this function)?",
-// 			"Yes     No")
-// }
+	"github.com/openshift/agent-installer-utils/tools/agent_tui/checks"
+	"github.com/openshift/agent-installer-utils/tools/agent_tui/ui"
+)
 
-// func TestRendezvousIP(t *testing.T) {
-// 	cases := []struct {
-// 		name  string
-// 		steps func(app *AppTester)
-// 	}{
-// 		{
-// 			name: "invalid ip",
-// 			steps: func(app *AppTester) {
-// 				app.Start().
-// 					// Move to the node form
-// 					SelectItem(forms.NO).
+func TestChecksPage(t *testing.T) {
+	cases := []struct {
+		name   string
+		config checks.Config
+		steps  func(app *AppTester)
+	}{
+		{
+			name: "success, all checks pass, verify checks screen content",
+			steps: func(app *AppTester) {
+				appConfig := checks.Config{
+					ReleaseImageURL: "quay.io/openshift-release-dev/ocp-release:4.12.2-x86_64",
+				}
+				app.Start(appConfig).
+					WaitForScreenContent(
+						"Agent installer network boot setup",
+						appConfig.ReleaseImageURL,
+						"✓ podman pull release image",
+						"✓ nslookup quay.io",
+						"✓ quay.io does not respond to ping, ping skipped")
+			},
+		},
+		{
+			name: "success, all checks pass, verify app switches to prompt with timeout",
+			steps: func(app *AppTester) {
+				appConfig := checks.Config{
+					ReleaseImageURL: "quay.io/openshift-release-dev/ocp-release:4.12.2-x86_64",
+				}
+				tester := app.Start(appConfig)
+				// all checks should pass and we should be prompted
+				// with a message asking to continue "<Yes>" or
+				// to quit "<No>"
+				tester.WaitForScreenContent(
+					"Agent-based installer",
+					"connectivity checks passed",
+					"This prompt will timeout")
 
-// 					// Insert an invalid ip
-// 					FocusItem(forms.RENDEZVOUSLABEL).
-// 					ScreenTypeText("256.256.256.256").ScreenPressTab().
-// 					WaitForScreenContent("The specified Rendezvous IP is not a valid IP Address")
-// 			},
-// 		},
-// 	}
-// 	for _, tc := range cases {
-// 		steps := tc.steps
-// 		t.Run(tc.name, func(t *testing.T) {
-// 			t.Parallel()
-// 			app := NewAppTester(t)
-// 			defer app.Stop()
+				// after selecting "<Yes>" to continue with agent-tui
+				// we should see the check screen again
+				tester.SelectItem(ui.YES_BUTTON)
+				tester.WaitForScreenContent(
+					"Agent installer network boot setup",
+					appConfig.ReleaseImageURL,
+					"✓ podman pull release image",
+					"✓ nslookup quay.io",
+					"✓ quay.io does not respond to ping, ping skipped")
+			},
+		},
+		{
+			name: "release image not reachable",
+			steps: func(app *AppTester) {
+				appConfig := checks.Config{
+					ReleaseImageURL: "localhost:8888/missing",
+				}
+				tester := app.Start(appConfig)
+				tester.WaitForScreenContent(
+					"Agent installer network boot setup",
+					appConfig.ReleaseImageURL,
+					"✖ podman pull release image",
+					"✖ nslookup localhost",
+					"✓ ping localhost")
 
-// 			steps(app)
-// 		})
-// 	}
-// }
+				// TODO: There is a limitation in apptester
+				// where the full error details are not displayed
+				// We may need to make the check details textview
+				// contents accessible to the test framework and
+				// assert against that. In the example above
+				// the similuation screen contains:
+				//
+				// "nslookup failure:",
+				// "Server:        127.0.0.1",
+				//
+				// but is missing:
+				//
+				// "Release image pull error:"
+			},
+		},
+	}
+	for _, tc := range cases {
+		steps := tc.steps
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			app := NewAppTester(t)
+			defer app.Stop()
 
-// func TestCheckConnectivity(t *testing.T) {
-// 	cases := []struct {
-// 		name  string
-// 		steps func(app *AppTester)
-// 	}{
-// 		{
-// 			name: "connectivity ok",
-// 			steps: func(app *AppTester) {
-// 				app.Start().
-// 					// Move to the node form
-// 					SelectItem(forms.NO).
-
-// 					// Wait for the node form, and insert an invalid ip
-// 					FocusItem(forms.RENDEZVOUSLABEL).
-// 					ScreenTypeText("127.0.0.1").
-
-// 					// Press "Check connectivity" button
-// 					SelectItem(forms.CONNECTIVITYCHECK).
-// 					WaitForScreenContent("Connectivity check successful")
-// 			},
-// 		},
-// 		{
-// 			name: "connectivity failure",
-// 			steps: func(app *AppTester) {
-// 				app.Start().
-// 					// Move to the node form
-// 					SelectItem(forms.NO).
-
-// 					// Wait for the node form, and insert an invalid ip
-// 					FocusItem(forms.RENDEZVOUSLABEL).
-// 					ScreenTypeText("196.0.0.1").
-
-// 					// Press "Check connectivity" button
-// 					SelectItem(forms.CONNECTIVITYCHECK).
-// 					WaitForScreenContent("Failed to connect to 196.0.0.1 (exit status 1)")
-// 			},
-// 		},
-// 	}
-// 	for _, tc := range cases {
-// 		steps := tc.steps
-// 		t.Run(tc.name, func(t *testing.T) {
-// 			t.Parallel()
-// 			app := NewAppTester(t)
-// 			defer app.Stop()
-
-// 			steps(app)
-// 		})
-// 	}
-// }
+			steps(app)
+		})
+	}
+}

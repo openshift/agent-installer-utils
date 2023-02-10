@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	YES string = "<Yes>"
-	NO  string = "<No>"
+	YES_BUTTON string = "<Yes>"
+	NO_BUTTON  string = "<No>"
 )
 
 // Creates the timeout modal but does not add the modal
@@ -24,7 +24,7 @@ func (u *UI) createTimeoutModal(config checks.Config) {
 	u.timeoutModal = tview.NewModal().
 		SetTextColor(tcell.ColorBlack).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			if buttonLabel == YES {
+			if buttonLabel == YES_BUTTON {
 				u.exitAfterTimeout = false
 				u.returnFocusToChecks()
 			} else {
@@ -35,7 +35,7 @@ func (u *UI) createTimeoutModal(config checks.Config) {
 		SetButtonTextColor(tcell.ColorBlack).
 		SetButtonBackgroundColor(tcell.ColorDarkGray)
 
-	userPromptButtons := []string{YES, NO}
+	userPromptButtons := []string{YES_BUTTON, NO_BUTTON}
 	u.timeoutModal.AddButtons(userPromptButtons)
 }
 

@@ -18,9 +18,9 @@ type UI struct {
 	activatedUserPrompt bool // activate user prompt only once
 }
 
-func NewUI(config checks.Config) *UI {
+func NewUI(app *tview.Application, config checks.Config) *UI {
 	ui := &UI{
-		app: tview.NewApplication(),
+		app: app,
 	}
 	ui.create(config)
 	return ui

@@ -10,9 +10,11 @@ import (
 func App(app *tview.Application, config checks.Config) {
 	var appUI *ui.UI
 	if app == nil {
-		appUI = ui.NewUI(config)
-		app = appUI.GetApp()
+		app = tview.NewApplication()
 	}
+
+	appUI = ui.NewUI(app, config)
+
 	controller := ui.NewController(appUI)
 
 	engine := checks.NewEngine(controller.GetChan(), config)
