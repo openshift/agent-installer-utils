@@ -8,6 +8,7 @@ import (
 	"unicode"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/openshift/agent-installer-utils/tools/agent_tui/checks"
 	"github.com/rivo/tview"
 	"github.com/stretchr/testify/assert"
 )
@@ -49,8 +50,8 @@ func NewAppTester(t *testing.T, debug ...bool) *AppTester {
 }
 
 // Starts a new Agent TUI in background
-func (a *AppTester) Start() *AppTester {
-	go App(a.app)
+func (a *AppTester) Start(config checks.Config) *AppTester {
+	go App(a.app, config)
 	return a
 }
 
@@ -135,8 +136,13 @@ func (a *AppTester) fetchScreenContent() []string {
 	for y := 0; y < h; y++ {
 		line := ""
 		for x := 0; x < w; x++ {
+			if len(cells[x+y*w].Runes) == 0 {
+				continue
+			}
 			r := cells[x+y*w].Runes[0]
-			if !unicode.IsSymbol(r) {
+			if !unicode.IsSymbol(r) ||
+				r == '✓' ||
+				r == '✖' {
 				line += string(r)
 			}
 		}

@@ -17,6 +17,23 @@ information relative to the failed checks and give the user a chance to correct 
 
 It is built using the tivo/tview golang library
 
+## How do I run it locally?
+
+The tool has a dependency on the nmstate library. Install the library for your OS. For CentOS, the library is in the nmstate-libs package:
+
+````
+dnf install nmstate-libs
+````
+
+Then build and run the agent-tui.
+
+````
+./hack/build.sh
+RELEASE_IMAGE=quay.io/openshift-release-dev/ocp-release:4.12.0-rc.7-x86_64 ./bin/agent-tui
+````
+
+RELEASE_IMAGE is the URL to a OpenShift release image.
+
 ## Will this grow to be an entire agent based TUI for interactive installation?
 
 It is not likely
