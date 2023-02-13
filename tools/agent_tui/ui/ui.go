@@ -35,7 +35,7 @@ func (u *UI) GetPages() *tview.Pages {
 }
 
 func (u *UI) returnFocusToChecks() {
-	u.pages.SwitchToPage("checkScreen")
+	u.pages.SwitchToPage(CHECK_PAGE_NAME)
 	// shifting focus back to the "Configure network"
 	// button requires setting focus in this sequence
 	// form -> form-button

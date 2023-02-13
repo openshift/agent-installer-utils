@@ -15,6 +15,7 @@ const (
 	RELEASE_IMAGE_LABEL     string = "Release Image"
 	CONFIGURE_BUTTON        string = "<Configure network>"
 	QUIT_BUTTON             string = "<Quit>"
+	CHECK_PAGE_NAME         string = "checkScreen"
 )
 
 func (u *UI) markCheckSuccess(row int, col int) {
@@ -169,7 +170,7 @@ func (u *UI) createCheckPage(config checks.Config) {
 
 	u.pages.SetBackgroundColor(newt.ColorBlue)
 
-	u.pages.AddPage("checkScreen", flex, true, true)
+	u.pages.AddPage(CHECK_PAGE_NAME, flex, true, true)
 
 	u.app.SetRoot(u.pages, true).SetFocus(u.form).EnableMouse(true)
 }

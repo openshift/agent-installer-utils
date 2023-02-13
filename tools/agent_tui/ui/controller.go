@@ -107,6 +107,12 @@ func (c *Controller) Init() {
 						c.ui.activatedUserPrompt = true
 					}
 				})
+			} else {
+				// at least one check is failing
+				// if the user prompt is shown, hide it
+				// and don't exit if timeout is reached
+				c.ui.exitAfterTimeout = false
+				c.ui.returnFocusToChecks()
 			}
 			c.ui.app.QueueUpdateDraw(func() {})
 		}
