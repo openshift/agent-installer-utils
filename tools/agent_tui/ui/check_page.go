@@ -46,7 +46,7 @@ func (u *UI) setCheckDescription(row int, col int, description string) {
 }
 
 func (u *UI) appendNewErrorToDetails(heading string, errorString string) {
-	u.appendToDetails(fmt.Sprintf("%s%s:%s\n%s", "[red]", heading, "[grey]", errorString))
+	u.appendToDetails(fmt.Sprintf("%s%s:%s\n%s", "[red]", heading, "[black]", errorString))
 }
 
 func (u *UI) appendToDetails(newLines string) {

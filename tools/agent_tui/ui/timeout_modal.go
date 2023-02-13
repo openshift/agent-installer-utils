@@ -31,11 +31,13 @@ func (u *UI) createTimeoutModal(config checks.Config) {
 				u.app.Stop()
 			}
 		}).
-		SetBackgroundColor(newt.ColorGray).
-		SetButtonTextColor(tcell.ColorBlack).
-		SetButtonBackgroundColor(tcell.ColorDarkGray)
-	u.timeoutModal.SetBorderColor(newt.ColorBlack)
-
+		SetBackgroundColor(newt.ColorGray)
+	u.timeoutModal.
+		SetBorderColor(newt.ColorBlack).
+		SetBorder(true)
+	u.timeoutModal.
+		SetButtonBackgroundColor(newt.ColorGray).
+		SetButtonTextColor(newt.ColorRed)
 	userPromptButtons := []string{YES_BUTTON, NO_BUTTON}
 	u.timeoutModal.AddButtons(userPromptButtons)
 }
