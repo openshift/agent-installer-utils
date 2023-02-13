@@ -106,11 +106,10 @@ func (u *UI) createCheckPage(config checks.Config) {
 	u.form.SetBackgroundColor(newt.ColorGray)
 	u.form.SetButtonsAlign(tview.AlignCenter)
 	u.form.AddButton(CONFIGURE_BUTTON, func() {
-		// Do not display the timeout prompt if the user
-		// is already interacting with the ui
-		u.activatedUserPrompt = true
+		u.nmtuiActive = true
 		f := u.NMTUIRunner(nil)
 		f()
+		u.nmtuiActive = false
 	})
 	u.form.AddButton(QUIT_BUTTON, func() {
 		u.app.Stop()

@@ -14,8 +14,8 @@ type UI struct {
 	details             *tview.TextView // where errors from checks are displayed
 	form                *tview.Form     // contains "Configure network" button
 	timeoutModal        *tview.Modal    // popup window that times out
-	exitAfterTimeout    bool
-	activatedUserPrompt bool // activate user prompt only once
+	nmtuiActive         bool
+	timeoutDialogActive bool
 }
 
 func NewUI(app *tview.Application, config checks.Config) *UI {

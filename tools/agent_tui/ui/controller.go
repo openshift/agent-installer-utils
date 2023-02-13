@@ -17,6 +17,7 @@ type State struct {
 	ReleaseImageDomainNameResolutionSuccess bool
 	ReleaseImageHostPingSuccess             bool
 	ReleaseImageHttp                        bool
+	lastCheckAllSuccess                     bool
 }
 
 func NewController(ui *UI) *Controller {
@@ -99,22 +100,23 @@ func (c *Controller) Init() {
 				})
 			}
 
-			if c.AllChecksSuccess() {
+			if c.ui.nmtuiActive {
+				continue
+			}
+
+			allChecksSuccessful := c.AllChecksSuccess()
+			if !allChecksSuccessful && c.ui.timeoutDialogActive {
 				c.ui.app.QueueUpdate(func() {
-					if !c.ui.activatedUserPrompt {
-						// Only activate user prompt once
-						c.ui.activateUserPrompt()
-						c.ui.activatedUserPrompt = true
-					}
+					c.ui.cancelUserPrompt()
 				})
-			} else {
-				// at least one check is failing
-				// if the user prompt is shown, hide it
-				// and don't exit if timeout is reached
-				c.ui.exitAfterTimeout = false
-				c.ui.returnFocusToChecks()
+			}
+			if allChecksSuccessful && !c.ui.timeoutDialogActive && c.state.lastCheckAllSuccess != allChecksSuccessful {
+				c.ui.app.QueueUpdate(func() {
+					c.ui.activateUserPrompt()
+				})
 			}
 			c.ui.app.QueueUpdateDraw(func() {})
+			c.state.lastCheckAllSuccess = allChecksSuccessful
 		}
 	}()
 }

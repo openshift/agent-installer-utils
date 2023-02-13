@@ -25,8 +25,7 @@ func (u *UI) createTimeoutModal(config checks.Config) {
 		SetTextColor(tcell.ColorBlack).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			if buttonLabel == YES_BUTTON {
-				u.exitAfterTimeout = false
-				u.returnFocusToChecks()
+				u.cancelUserPrompt()
 			} else {
 				u.app.Stop()
 			}
@@ -43,7 +42,7 @@ func (u *UI) createTimeoutModal(config checks.Config) {
 }
 
 func (u *UI) activateUserPrompt() {
-	u.exitAfterTimeout = true
+	u.timeoutDialogActive = true
 	u.app.SetFocus(u.timeoutModal)
 	go func() {
 		timeoutSeconds := 20
@@ -57,9 +56,14 @@ func (u *UI) activateUserPrompt() {
 			i++
 		}
 
-		if u.exitAfterTimeout {
+		if u.timeoutDialogActive {
 			u.app.Stop()
 		}
 	}()
 	u.pages.AddPage("userPromptToConfigureNetworkWith20sTimeout", u.timeoutModal, true, true)
+}
+
+func (u *UI) cancelUserPrompt() {
+	u.timeoutDialogActive = false
+	u.returnFocusToChecks()
 }
