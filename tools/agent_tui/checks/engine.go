@@ -3,6 +3,7 @@ package checks
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"time"
@@ -14,6 +15,7 @@ const (
 	CheckTypeReleaseImagePull     = "ReleaseImagePull"
 	CheckTypeReleaseImageHostDNS  = "ReleaseImageHostDNS"
 	CheckTypeReleaseImageHostPing = "ReleaseImageHostPing"
+	CheckTypeReleaseImageHttp     = "ReleaseImageHttp"
 )
 
 type Config struct {
@@ -120,6 +122,34 @@ func (e *Engine) newReleaseImageHostPingCheck(hostname string) *Check {
 	}
 }
 
+// This check verifies whether there is a http server response
+// when schemeHostnamePort is queried. This does not check
+// if the release image exists.
+func (e *Engine) newReleaseImageHttpCheck(schemeHostnamePort string) *Check {
+	ctype := CheckTypeReleaseImageHttp
+	return &Check{
+		Type: ctype,
+		Freq: 5 * time.Second,
+		Run: func(c chan CheckResult, freq time.Duration) {
+			for {
+				checkFunction := func() ([]byte, error) {
+					resp, err := http.Get(schemeHostnamePort)
+					if err != nil {
+						return []byte(err.Error()), err
+					} else {
+						// server replied with http response
+						// as long as there is a response, the check
+						// is a success.
+						return []byte(resp.Status), err
+					}
+				}
+				c <- e.createCheckResult(checkFunction, ctype)
+				time.Sleep(freq)
+			}
+		},
+	}
+}
+
 func NewEngine(c chan CheckResult, config Config) *Engine {
 	checks := []*Check{}
 	logger := logrus.New()
@@ -139,6 +169,11 @@ func NewEngine(c chan CheckResult, config Config) *Engine {
 		logger.Fatalf("Error parsing hostname from releaseImageURL: %s\n", config.ReleaseImageURL)
 	}
 
+	schemeHostnamePort, err := ParseSchemeHostnamePortFromURL(config.ReleaseImageURL, "https://")
+	if err != nil {
+		logger.Fatalf("Error creating <scheme>://<hostname>:<port> from releaseImageURL: %s\n", config.ReleaseImageURL)
+	}
+
 	e := &Engine{
 		checks:  checks,
 		channel: c,
@@ -148,7 +183,8 @@ func NewEngine(c chan CheckResult, config Config) *Engine {
 	e.checks = append(e.checks,
 		e.newRegistryImagePullCheck(config.ReleaseImageURL),
 		e.newReleaseImageHostDNSCheck(hostname),
-		e.newReleaseImageHostPingCheck(hostname))
+		e.newReleaseImageHostPingCheck(hostname),
+		e.newReleaseImageHttpCheck(schemeHostnamePort))
 
 	return e
 }

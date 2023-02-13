@@ -31,6 +31,20 @@ func (u *UI) markCheckFail(row int, col int) {
 		BackgroundColor: newt.ColorGray})
 }
 
+func (u *UI) markCheckUnknown(row int, col int) {
+	u.checks.SetCell(row, col, &tview.TableCell{
+		Text:            " ?",
+		Color:           newt.ColorBlack,
+		BackgroundColor: newt.ColorGray})
+}
+
+func (u *UI) setCheckDescription(row int, col int, description string) {
+	u.checks.SetCell(row, col, &tview.TableCell{
+		Text:            description,
+		Color:           newt.ColorBlack,
+		BackgroundColor: newt.ColorGray})
+}
+
 func (u *UI) appendNewErrorToDetails(heading string, errorString string) {
 	u.appendToDetails(fmt.Sprintf("%s%s:%s\n%s", "[red]", heading, "[grey]", errorString))
 }
@@ -58,43 +72,25 @@ func (u *UI) createCheckPage(config checks.Config) {
 	if err != nil {
 		dialogs.PanicDialog(u.app, err)
 	}
+
 	u.checks = tview.NewTable()
 	u.checks.SetBorder(true)
 	u.checks.SetTitle("  Checks  ")
 	u.checks.SetBorderColor(newt.ColorBlack)
 	u.checks.SetBackgroundColor(newt.ColorGray)
 	u.checks.SetTitleColor(newt.ColorBlack)
-	u.checks.SetCell(0, 0, &tview.TableCell{
-		Text:            " ?",
-		Color:           newt.ColorBlack,
-		BackgroundColor: newt.ColorGray})
-	u.checks.SetCell(0, 1, &tview.TableCell{
-		Text:            "podman pull release image",
-		Color:           newt.ColorBlack,
-		BackgroundColor: newt.ColorGray})
-	u.checks.SetCell(1, 0, &tview.TableCell{
-		Text:            " ?",
-		Color:           newt.ColorBlack,
-		BackgroundColor: newt.ColorGray})
-	u.checks.SetCell(1, 1, &tview.TableCell{
-		Text:            "nslookup " + releaseImageHostName,
-		Color:           newt.ColorBlack,
-		BackgroundColor: newt.ColorGray})
-	u.checks.SetCell(2, 0, &tview.TableCell{
-		Text:            " ?",
-		Color:           newt.ColorBlack,
-		BackgroundColor: newt.ColorGray})
+	u.markCheckUnknown(0, 0)
+	u.setCheckDescription(0, 1, "podman pull release image")
+	u.markCheckUnknown(1, 0)
+	u.setCheckDescription(1, 1, "nslookup "+releaseImageHostName)
+	u.markCheckUnknown(2, 0)
 	if releaseImageHostName == "quay.io" {
-		u.checks.SetCell(2, 1, &tview.TableCell{
-			Text:            "quay.io does not respond to ping, ping skipped",
-			Color:           newt.ColorBlack,
-			BackgroundColor: newt.ColorGray})
+		u.setCheckDescription(2, 1, "quay.io does not respond to ping, ping skipped")
 	} else {
-		u.checks.SetCell(2, 1, &tview.TableCell{
-			Text:            "ping " + releaseImageHostName,
-			Color:           newt.ColorBlack,
-			BackgroundColor: newt.ColorGray})
+		u.setCheckDescription(2, 1, "ping "+releaseImageHostName)
 	}
+	u.markCheckUnknown(3, 0)
+	u.setCheckDescription(3, 1, releaseImageHostName+" responds to http GET")
 
 	u.details = tview.NewTextView()
 	u.details.SetBorder(true)
@@ -151,7 +147,7 @@ func (u *UI) createCheckPage(config checks.Config) {
 	// SetRows(number-of-lines-to-give-1st-row,
 	//         number-of-lines-to-give-2nd-row,..etc)
 	// 0 means fill
-	u.grid = tview.NewGrid().SetRows(5, 5, 0, 3).SetColumns(0).
+	u.grid = tview.NewGrid().SetRows(5, 6, 0, 3).SetColumns(0).
 		AddItem(u.envVars, 0, 0, 1, 1, 0, 0, false).
 		AddItem(u.checks, 1, 0, 1, 1, 0, 0, false).
 		AddItem(u.details, 2, 0, 1, 1, 0, 0, false).

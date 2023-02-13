@@ -16,6 +16,7 @@ type State struct {
 	ReleaseImagePullSuccess                 bool
 	ReleaseImageDomainNameResolutionSuccess bool
 	ReleaseImageHostPingSuccess             bool
+	ReleaseImageHttp                        bool
 }
 
 func NewController(ui *UI) *Controller {
@@ -47,6 +48,8 @@ func (c *Controller) updateState(cr checks.CheckResult) {
 		c.state.ReleaseImageDomainNameResolutionSuccess = cr.Success
 	case checks.CheckTypeReleaseImageHostPing:
 		c.state.ReleaseImageHostPingSuccess = cr.Success
+	case checks.CheckTypeReleaseImageHttp:
+		c.state.ReleaseImageHttp = cr.Success
 	}
 }
 
@@ -83,6 +86,15 @@ func (c *Controller) Init() {
 					} else {
 						c.ui.markCheckFail(2, 0)
 						c.ui.appendNewErrorToDetails("ping failure", r.Details)
+					}
+				})
+			case checks.CheckTypeReleaseImageHttp:
+				c.ui.app.QueueUpdate(func() {
+					if r.Success {
+						c.ui.markCheckSuccess(3, 0)
+					} else {
+						c.ui.markCheckFail(3, 0)
+						c.ui.appendNewErrorToDetails("http server not responding", r.Details)
 					}
 				})
 			}
