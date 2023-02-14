@@ -100,17 +100,17 @@ func (c *Controller) Init() {
 				})
 			}
 
-			if c.ui.nmtuiActive {
+			if c.ui.isNMTuiActive() {
 				continue
 			}
 
 			allChecksSuccessful := c.AllChecksSuccess()
-			if !allChecksSuccessful && c.ui.timeoutDialogActive {
+			if !allChecksSuccessful && c.ui.isTimeoutDialogActive() {
 				c.ui.app.QueueUpdate(func() {
 					c.ui.cancelUserPrompt()
 				})
 			}
-			if allChecksSuccessful && !c.ui.timeoutDialogActive && c.state.lastCheckAllSuccess != allChecksSuccessful {
+			if allChecksSuccessful && !c.ui.isTimeoutDialogActive() && c.state.lastCheckAllSuccess != allChecksSuccessful {
 				c.ui.app.QueueUpdate(func() {
 					c.ui.activateUserPrompt()
 				})
