@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"sync/atomic"
+
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/checks"
 	"github.com/rivo/tview"
 )
@@ -14,8 +16,8 @@ type UI struct {
 	details             *tview.TextView // where errors from checks are displayed
 	form                *tview.Form     // contains "Configure network" button
 	timeoutModal        *tview.Modal    // popup window that times out
-	nmtuiActive         bool
-	timeoutDialogActive bool
+	nmtuiActive         atomic.Bool
+	timeoutDialogActive atomic.Bool
 }
 
 func NewUI(app *tview.Application, config checks.Config) *UI {
@@ -41,6 +43,22 @@ func (u *UI) returnFocusToChecks() {
 	// form -> form-button
 	u.app.SetFocus(u.form)
 	u.app.SetFocus(u.form.GetButton(0))
+}
+
+func (u *UI) setIsNMTuiActive(isActive bool) {
+	u.nmtuiActive.Store(isActive)
+}
+
+func (u *UI) isNMTuiActive() bool {
+	return u.nmtuiActive.Load()
+}
+
+func (u *UI) setIsTimeoutDialogActive(isActive bool) {
+	u.timeoutDialogActive.Store(isActive)
+}
+
+func (u *UI) isTimeoutDialogActive() bool {
+	return u.timeoutDialogActive.Load()
 }
 
 func (u *UI) create(config checks.Config) {
