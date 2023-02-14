@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"context"
+
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/checks"
 )
 
@@ -56,6 +58,7 @@ func (c *Controller) updateState(cr checks.CheckResult) {
 
 func (c *Controller) Init() {
 	go func() {
+
 		for {
 			r := <-c.channel
 			c.updateState(r)
@@ -104,15 +107,16 @@ func (c *Controller) Init() {
 				continue
 			}
 
+			ctx, cancel := context.WithCancel(context.Background())
 			allChecksSuccessful := c.AllChecksSuccess()
 			if !allChecksSuccessful && c.ui.isTimeoutDialogActive() {
 				c.ui.app.QueueUpdate(func() {
-					c.ui.cancelUserPrompt()
+					c.ui.cancelUserPrompt(cancel)
 				})
 			}
 			if allChecksSuccessful && !c.ui.isTimeoutDialogActive() && c.state.lastCheckAllSuccess != allChecksSuccessful {
 				c.ui.app.QueueUpdate(func() {
-					c.ui.activateUserPrompt()
+					c.ui.activateUserPrompt(ctx)
 				})
 			}
 			c.ui.app.QueueUpdateDraw(func() {})

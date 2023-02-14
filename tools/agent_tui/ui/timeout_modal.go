@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -41,29 +42,31 @@ func (u *UI) createTimeoutModal(config checks.Config) {
 	u.timeoutModal.AddButtons(userPromptButtons)
 }
 
-func (u *UI) activateUserPrompt() {
+func (u *UI) activateUserPrompt(ctx context.Context) {
 	u.setIsTimeoutDialogActive(true)
 	u.app.SetFocus(u.timeoutModal)
-	go func() {
+	go func(ctx context.Context) {
 		timeoutSeconds := 20
 		i := 0
 		for i <= timeoutSeconds {
-			modalText := fmt.Sprint("Agent-based installer connectivity checks passed. No additional network configuration is required. Do you still wish to modify the network configuration for this host?\n\n This prompt will timeout in [red]", timeoutSeconds-i, " [black]seconds.")
-			u.app.QueueUpdateDraw(func() {
-				u.timeoutModal.SetText(modalText)
-			})
-			time.Sleep(1 * time.Second)
-			i++
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				modalText := fmt.Sprint("Agent-based installer connectivity checks passed. No additional network configuration is required. Do you still wish to modify the network configuration for this host?\n\n This prompt will timeout in [red]", timeoutSeconds-i, " [black]seconds.")
+				u.app.QueueUpdateDraw(func() {
+					u.timeoutModal.SetText(modalText)
+				})
+				time.Sleep(1 * time.Second)
+				i++
+			}
 		}
-
-		if u.isTimeoutDialogActive() {
-			u.app.Stop()
-		}
-	}()
+	}(ctx)
 	u.pages.AddPage("userPromptToConfigureNetworkWith20sTimeout", u.timeoutModal, true, true)
 }
 
-func (u *UI) cancelUserPrompt() {
+func (u *UI) cancelUserPrompt(cancel context.CancelFunc) {
+	cancel()
 	u.setIsTimeoutDialogActive(false)
 	u.returnFocusToChecks()
 }
