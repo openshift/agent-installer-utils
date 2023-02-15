@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gdamore/tcell/v2"
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/checks"
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/newt"
 	"github.com/rivo/tview"
@@ -22,7 +21,6 @@ func (u *UI) createTimeoutModal(config checks.Config) {
 	// view is the modal asking the user if they would still
 	// like to change their network configuration.
 	u.timeoutModal = tview.NewModal().
-		SetTextColor(tcell.ColorBlack).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			if buttonLabel == YES_BUTTON {
 				u.cancelUserPrompt()
@@ -30,7 +28,7 @@ func (u *UI) createTimeoutModal(config checks.Config) {
 				u.app.Stop()
 			}
 		}).
-		SetBackgroundColor(newt.ColorGray)
+		SetBackgroundColor(newt.ColorBlack)
 	u.timeoutModal.
 		SetBorderColor(newt.ColorBlack).
 		SetBorder(true)
@@ -48,7 +46,7 @@ func (u *UI) activateUserPrompt() {
 		timeoutSeconds := 20
 		i := 0
 		for i <= timeoutSeconds {
-			modalText := fmt.Sprint("Agent-based installer connectivity checks passed. No additional network configuration is required. Do you still wish to modify the network configuration for this host?\n\n This prompt will timeout in [red]", timeoutSeconds-i, " [black]seconds.")
+			modalText := fmt.Sprint("Agent-based installer connectivity checks passed. No additional network configuration is required. Do you still wish to modify the network configuration for this host?\n\n This prompt will timeout in [red]", timeoutSeconds-i, " [white]seconds.")
 			u.app.QueueUpdateDraw(func() {
 				u.timeoutModal.SetText(modalText)
 			})
