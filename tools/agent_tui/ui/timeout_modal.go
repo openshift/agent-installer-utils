@@ -40,7 +40,7 @@ func (u *UI) createTimeoutModal(config checks.Config) {
 }
 
 func (u *UI) activateUserPrompt() {
-	u.timeoutDialogActive = true
+	u.setIsTimeoutDialogActive(true)
 	u.app.SetFocus(u.timeoutModal)
 	go func() {
 		timeoutSeconds := 20
@@ -54,7 +54,7 @@ func (u *UI) activateUserPrompt() {
 			i++
 		}
 
-		if u.timeoutDialogActive {
+		if u.isTimeoutDialogActive() {
 			u.app.Stop()
 		}
 	}()
@@ -62,6 +62,6 @@ func (u *UI) activateUserPrompt() {
 }
 
 func (u *UI) cancelUserPrompt() {
-	u.timeoutDialogActive = false
+	u.setIsTimeoutDialogActive(false)
 	u.returnFocusToChecks()
 }
