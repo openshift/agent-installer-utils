@@ -100,7 +100,7 @@ func (c *Controller) Init() {
 				})
 			}
 
-			if c.ui.isNMTuiActive() {
+			if c.ui.IsNMTuiActive() {
 				continue
 			}
 

@@ -106,10 +106,7 @@ func (u *UI) createCheckPage(config checks.Config) {
 	u.form.SetBackgroundColor(newt.ColorGray)
 	u.form.SetButtonsAlign(tview.AlignCenter)
 	u.form.AddButton(CONFIGURE_BUTTON, func() {
-		u.setIsNMTuiActive(true)
-		f := u.NMTUIRunner(nil)
-		f()
-		u.setIsNMTuiActive(false)
+		u.ShowNMTUI(nil)
 	})
 	u.form.AddButton(QUIT_BUTTON, func() {
 		u.app.Stop()

@@ -47,11 +47,7 @@ func (u *UI) returnFocusToChecks() {
 	u.app.SetFocus(u.form.GetButton(0))
 }
 
-func (u *UI) setIsNMTuiActive(isActive bool) {
-	u.nmtuiActive.Store(isActive)
-}
-
-func (u *UI) isNMTuiActive() bool {
+func (u *UI) IsNMTuiActive() bool {
 	return u.nmtuiActive.Load()
 }
 
