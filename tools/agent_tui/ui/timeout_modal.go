@@ -42,26 +42,37 @@ func (u *UI) createTimeoutModal(config checks.Config) {
 func (u *UI) activateUserPrompt() {
 	u.setIsTimeoutDialogActive(true)
 	u.app.SetFocus(u.timeoutModal)
-	go func() {
-		timeoutSeconds := 20
-		i := 0
-		for i <= timeoutSeconds {
-			modalText := fmt.Sprint("Agent-based installer connectivity checks passed. No additional network configuration is required. Do you still wish to modify the network configuration for this host?\n\n This prompt will timeout in [red]", timeoutSeconds-i, " [white]seconds.")
-			u.app.QueueUpdateDraw(func() {
-				u.timeoutModal.SetText(modalText)
-			})
-			time.Sleep(1 * time.Second)
-			i++
-		}
 
-		if u.isTimeoutDialogActive() {
-			u.app.Stop()
+	start := time.Now()
+	ticker := time.NewTicker(1 * time.Second)
+	timeout := 20 * time.Second
+
+	go func() {
+		for {
+			select {
+			case <-u.timeoutDialogCancel:
+				ticker.Stop()
+				return
+
+			case t := <-ticker.C:
+				elapsed := t.Sub(start)
+				if elapsed >= timeout {
+					ticker.Stop()
+					u.app.Stop()
+				}
+
+				modalText := fmt.Sprintf("Agent-based installer connectivity checks passed. No additional network configuration is required. Do you still wish to modify the network configuration for this host?\n\n This prompt will timeout in [red]%.f [white]seconds.", timeout.Seconds()-elapsed.Seconds())
+				u.app.QueueUpdateDraw(func() {
+					u.timeoutModal.SetText(modalText)
+				})
+			}
 		}
 	}()
 	u.pages.AddPage("userPromptToConfigureNetworkWith20sTimeout", u.timeoutModal, true, true)
 }
 
 func (u *UI) cancelUserPrompt() {
+	u.timeoutDialogCancel <- true
 	u.setIsTimeoutDialogActive(false)
 	u.returnFocusToChecks()
 }

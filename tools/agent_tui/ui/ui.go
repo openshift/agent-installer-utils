@@ -18,11 +18,13 @@ type UI struct {
 	timeoutModal        *tview.Modal    // popup window that times out
 	nmtuiActive         atomic.Bool
 	timeoutDialogActive atomic.Bool
+	timeoutDialogCancel chan bool
 }
 
 func NewUI(app *tview.Application, config checks.Config) *UI {
 	ui := &UI{
-		app: app,
+		app:                 app,
+		timeoutDialogCancel: make(chan bool),
 	}
 	ui.create(config)
 	return ui
