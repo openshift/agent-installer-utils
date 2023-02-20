@@ -8,22 +8,16 @@ import (
 type Controller struct {
 	ui      *UI
 	channel chan checks.CheckResult
-	state   State
-}
 
-type State struct {
-	// default value is false
-	ReleaseImagePullSuccess                 bool
-	ReleaseImageDomainNameResolutionSuccess bool
-	ReleaseImageHostPingSuccess             bool
-	ReleaseImageHttp                        bool
-	lastCheckAllSuccess                     bool
+	checks map[string]checks.CheckResult
+	state  bool
 }
 
 func NewController(ui *UI) *Controller {
 	return &Controller{
 		channel: make(chan checks.CheckResult, 10),
 		ui:      ui,
+		checks:  make(map[string]checks.CheckResult),
 	}
 }
 
@@ -31,26 +25,15 @@ func (c *Controller) GetChan() chan checks.CheckResult {
 	return c.channel
 }
 
-func (c *Controller) AllChecksSuccess() bool {
-	if c.state.ReleaseImagePullSuccess &&
-		c.state.ReleaseImageDomainNameResolutionSuccess &&
-		c.state.ReleaseImageHostPingSuccess {
-		return true
-	} else {
-		return false
-	}
-}
-
 func (c *Controller) updateState(cr checks.CheckResult) {
-	switch cr.Type {
-	case checks.CheckTypeReleaseImagePull:
-		c.state.ReleaseImagePullSuccess = cr.Success
-	case checks.CheckTypeReleaseImageHostDNS:
-		c.state.ReleaseImageDomainNameResolutionSuccess = cr.Success
-	case checks.CheckTypeReleaseImageHostPing:
-		c.state.ReleaseImageHostPingSuccess = cr.Success
-	case checks.CheckTypeReleaseImageHttp:
-		c.state.ReleaseImageHttp = cr.Success
+	c.checks[cr.Type] = cr
+	c.state = true
+
+	for _, res := range c.checks {
+		if !res.Success {
+			c.state = false
+			break
+		}
 	}
 }
 
@@ -60,10 +43,16 @@ func (c *Controller) Init() {
 			r := <-c.channel
 			c.updateState(r)
 
-			//Update the widgets
+			// When nmtui is shown the UI is suspended, so
+			// let's skip any update
+			if c.ui.IsNMTuiActive() {
+				continue
+			}
+
+			// Update the widgets
 			switch r.Type {
 			case checks.CheckTypeReleaseImagePull:
-				c.ui.app.QueueUpdate(func() {
+				c.ui.app.QueueUpdateDraw(func() {
 					if r.Success {
 						c.ui.markCheckSuccess(0, 0)
 					} else {
@@ -72,7 +61,7 @@ func (c *Controller) Init() {
 					}
 				})
 			case checks.CheckTypeReleaseImageHostDNS:
-				c.ui.app.QueueUpdate(func() {
+				c.ui.app.QueueUpdateDraw(func() {
 					if r.Success {
 						c.ui.markCheckSuccess(1, 0)
 					} else {
@@ -81,7 +70,7 @@ func (c *Controller) Init() {
 					}
 				})
 			case checks.CheckTypeReleaseImageHostPing:
-				c.ui.app.QueueUpdate(func() {
+				c.ui.app.QueueUpdateDraw(func() {
 					if r.Success {
 						c.ui.markCheckSuccess(2, 0)
 					} else {
@@ -90,7 +79,7 @@ func (c *Controller) Init() {
 					}
 				})
 			case checks.CheckTypeReleaseImageHttp:
-				c.ui.app.QueueUpdate(func() {
+				c.ui.app.QueueUpdateDraw(func() {
 					if r.Success {
 						c.ui.markCheckSuccess(3, 0)
 					} else {
@@ -100,23 +89,12 @@ func (c *Controller) Init() {
 				})
 			}
 
-			if c.ui.IsNMTuiActive() {
-				continue
-			}
-
-			allChecksSuccessful := c.AllChecksSuccess()
-			if !allChecksSuccessful && c.ui.isTimeoutDialogActive() {
+			// A check failed while waiting for the countdown. Timeout dialog must be stopped
+			if !c.state && c.ui.isTimeoutDialogActive() {
 				c.ui.app.QueueUpdate(func() {
 					c.ui.cancelUserPrompt()
 				})
 			}
-			if allChecksSuccessful && !c.ui.isTimeoutDialogActive() && c.state.lastCheckAllSuccess != allChecksSuccessful {
-				c.ui.app.QueueUpdate(func() {
-					c.ui.activateUserPrompt()
-				})
-			}
-			c.ui.app.QueueUpdateDraw(func() {})
-			c.state.lastCheckAllSuccess = allChecksSuccessful
 		}
 	}()
 }
