@@ -19,7 +19,7 @@ func App(app *tview.Application, config checks.Config) {
 
 	engine := checks.NewEngine(controller.GetChan(), config)
 
-	controller.Init()
+	controller.Init(engine.Size())
 	engine.Init()
 
 	if err := app.Run(); err != nil {

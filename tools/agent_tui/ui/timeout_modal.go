@@ -10,8 +10,14 @@ import (
 )
 
 const (
-	YES_BUTTON string = "<Yes>"
-	NO_BUTTON  string = "<No>"
+	YES_BUTTON         string = "<Yes>"
+	NO_BUTTON          string = "<No>"
+	PAGE_TIMEOUTSCREEN string = "timeout"
+
+	timeout   = 20 * time.Second
+	modalText = "Agent-based installer connectivity checks passed. No additional network configuration is required." +
+		"Do you still wish to modify the network configuration for this host?\n\n " +
+		"This prompt will timeout in [red]%.f [white]seconds."
 )
 
 // Creates the timeout modal but does not add the modal
@@ -37,15 +43,18 @@ func (u *UI) createTimeoutModal(config checks.Config) {
 		SetButtonTextColor(newt.ColorRed)
 	userPromptButtons := []string{YES_BUTTON, NO_BUTTON}
 	u.timeoutModal.AddButtons(userPromptButtons)
+
+	u.timeoutModal.SetText(fmt.Sprintf(modalText, timeout.Seconds()))
+	u.pages.AddPage(PAGE_TIMEOUTSCREEN, u.timeoutModal, true, false)
 }
 
-func (u *UI) activateUserPrompt() {
+func (u *UI) ShowTimeoutDialog() {
 	u.setIsTimeoutDialogActive(true)
 	u.app.SetFocus(u.timeoutModal)
+	u.pages.ShowPage(PAGE_TIMEOUTSCREEN)
 
 	start := time.Now()
 	ticker := time.NewTicker(1 * time.Second)
-	timeout := 20 * time.Second
 
 	go func() {
 		for {
@@ -61,14 +70,12 @@ func (u *UI) activateUserPrompt() {
 					u.app.Stop()
 				}
 
-				modalText := fmt.Sprintf("Agent-based installer connectivity checks passed. No additional network configuration is required. Do you still wish to modify the network configuration for this host?\n\n This prompt will timeout in [red]%.f [white]seconds.", timeout.Seconds()-elapsed.Seconds())
 				u.app.QueueUpdateDraw(func() {
-					u.timeoutModal.SetText(modalText)
+					u.timeoutModal.SetText(fmt.Sprintf(modalText, timeout.Seconds()-elapsed.Seconds()))
 				})
 			}
 		}
 	}()
-	u.pages.AddPage("userPromptToConfigureNetworkWith20sTimeout", u.timeoutModal, true, true)
 }
 
 func (u *UI) cancelUserPrompt() {
