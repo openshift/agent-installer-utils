@@ -194,3 +194,7 @@ func (e *Engine) Init() {
 		go chk.Run(e.channel, chk.Freq)
 	}
 }
+
+func (e *Engine) Size() int {
+	return len(e.checks)
+}

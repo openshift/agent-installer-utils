@@ -16,13 +16,16 @@ type UI struct {
 	details             *tview.TextView // where errors from checks are displayed
 	form                *tview.Form     // contains "Configure network" button
 	timeoutModal        *tview.Modal    // popup window that times out
+	splashScreen        *tview.Modal    // display initial waiting message
 	nmtuiActive         atomic.Bool
 	timeoutDialogActive atomic.Bool
+	timeoutDialogCancel chan bool
 }
 
 func NewUI(app *tview.Application, config checks.Config) *UI {
 	ui := &UI{
-		app: app,
+		app:                 app,
+		timeoutDialogCancel: make(chan bool),
 	}
 	ui.create(config)
 	return ui
@@ -37,7 +40,7 @@ func (u *UI) GetPages() *tview.Pages {
 }
 
 func (u *UI) returnFocusToChecks() {
-	u.pages.SwitchToPage(CHECK_PAGE_NAME)
+	u.pages.SwitchToPage(PAGE_CHECKSCREEN)
 	// shifting focus back to the "Configure network"
 	// button requires setting focus in this sequence
 	// form -> form-button
@@ -45,11 +48,7 @@ func (u *UI) returnFocusToChecks() {
 	u.app.SetFocus(u.form.GetButton(0))
 }
 
-func (u *UI) setIsNMTuiActive(isActive bool) {
-	u.nmtuiActive.Store(isActive)
-}
-
-func (u *UI) isNMTuiActive() bool {
+func (u *UI) IsNMTuiActive() bool {
 	return u.nmtuiActive.Load()
 }
 
@@ -57,7 +56,7 @@ func (u *UI) setIsTimeoutDialogActive(isActive bool) {
 	u.timeoutDialogActive.Store(isActive)
 }
 
-func (u *UI) isTimeoutDialogActive() bool {
+func (u *UI) IsTimeoutDialogActive() bool {
 	return u.timeoutDialogActive.Load()
 }
 
@@ -65,4 +64,5 @@ func (u *UI) create(config checks.Config) {
 	u.pages = tview.NewPages()
 	u.createCheckPage(config)
 	u.createTimeoutModal(config)
+	u.createSplashScreen()
 }

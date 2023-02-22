@@ -8,22 +8,16 @@ import (
 type Controller struct {
 	ui      *UI
 	channel chan checks.CheckResult
-	state   State
-}
 
-type State struct {
-	// default value is false
-	ReleaseImagePullSuccess                 bool
-	ReleaseImageDomainNameResolutionSuccess bool
-	ReleaseImageHostPingSuccess             bool
-	ReleaseImageHttp                        bool
-	lastCheckAllSuccess                     bool
+	checks map[string]checks.CheckResult
+	state  bool
 }
 
 func NewController(ui *UI) *Controller {
 	return &Controller{
 		channel: make(chan checks.CheckResult, 10),
 		ui:      ui,
+		checks:  make(map[string]checks.CheckResult),
 	}
 }
 
@@ -31,92 +25,109 @@ func (c *Controller) GetChan() chan checks.CheckResult {
 	return c.channel
 }
 
-func (c *Controller) AllChecksSuccess() bool {
-	if c.state.ReleaseImagePullSuccess &&
-		c.state.ReleaseImageDomainNameResolutionSuccess &&
-		c.state.ReleaseImageHostPingSuccess {
-		return true
-	} else {
-		return false
-	}
-}
-
 func (c *Controller) updateState(cr checks.CheckResult) {
-	switch cr.Type {
-	case checks.CheckTypeReleaseImagePull:
-		c.state.ReleaseImagePullSuccess = cr.Success
-	case checks.CheckTypeReleaseImageHostDNS:
-		c.state.ReleaseImageDomainNameResolutionSuccess = cr.Success
-	case checks.CheckTypeReleaseImageHostPing:
-		c.state.ReleaseImageHostPingSuccess = cr.Success
-	case checks.CheckTypeReleaseImageHttp:
-		c.state.ReleaseImageHttp = cr.Success
+	c.checks[cr.Type] = cr
+	c.state = true
+
+	for _, res := range c.checks {
+		if !res.Success {
+			c.state = false
+			break
+		}
 	}
 }
 
-func (c *Controller) Init() {
+func (c *Controller) receivedAllCheckResults(numChecks int) bool {
+	return len(c.checks) >= numChecks
+}
+
+func (c *Controller) Init(numChecks int) {
+
+	c.ui.ShowSplashScreen()
+
 	go func() {
 		for {
-			r := <-c.channel
-			c.updateState(r)
+			res := <-c.channel
+			c.updateState(res)
 
-			//Update the widgets
-			switch r.Type {
-			case checks.CheckTypeReleaseImagePull:
-				c.ui.app.QueueUpdate(func() {
-					if r.Success {
-						c.ui.markCheckSuccess(0, 0)
-					} else {
-						c.ui.markCheckFail(0, 0)
-						c.ui.appendNewErrorToDetails("Release image pull error", r.Details)
-					}
-				})
-			case checks.CheckTypeReleaseImageHostDNS:
-				c.ui.app.QueueUpdate(func() {
-					if r.Success {
-						c.ui.markCheckSuccess(1, 0)
-					} else {
-						c.ui.markCheckFail(1, 0)
-						c.ui.appendNewErrorToDetails("nslookup failure", r.Details)
-					}
-				})
-			case checks.CheckTypeReleaseImageHostPing:
-				c.ui.app.QueueUpdate(func() {
-					if r.Success {
-						c.ui.markCheckSuccess(2, 0)
-					} else {
-						c.ui.markCheckFail(2, 0)
-						c.ui.appendNewErrorToDetails("ping failure", r.Details)
-					}
-				})
-			case checks.CheckTypeReleaseImageHttp:
-				c.ui.app.QueueUpdate(func() {
-					if r.Success {
-						c.ui.markCheckSuccess(3, 0)
-					} else {
-						c.ui.markCheckFail(3, 0)
-						c.ui.appendNewErrorToDetails("http server not responding", r.Details)
-					}
-				})
-			}
-
-			if c.ui.isNMTuiActive() {
+			// When nmtui is shown the UI is suspended, so
+			// let's skip any update
+			if c.ui.IsNMTuiActive() {
 				continue
 			}
 
-			allChecksSuccessful := c.AllChecksSuccess()
-			if !allChecksSuccessful && c.ui.isTimeoutDialogActive() {
+			// Keep the checks page continuously updated
+			c.updateCheckWidgets(res)
+
+			// Warming up, wait for at least the first
+			// set of check results
+			if !c.receivedAllCheckResults(numChecks) {
+				continue
+			}
+
+			// After receiving the initial results, let's
+			// show the timeout dialog if required
+			if c.ui.IsSplashScreenActive() {
+				c.ui.app.QueueUpdateDraw(func() {
+					c.ui.HideSplashScreen()
+					if c.state {
+						c.ui.ShowTimeoutDialog()
+					} else {
+						c.ui.returnFocusToChecks()
+					}
+				})
+				continue
+			}
+
+			// A check failed while waiting for the countdown. Timeout dialog must be stopped
+			if !c.state && c.ui.IsTimeoutDialogActive() {
 				c.ui.app.QueueUpdate(func() {
 					c.ui.cancelUserPrompt()
 				})
 			}
-			if allChecksSuccessful && !c.ui.isTimeoutDialogActive() && c.state.lastCheckAllSuccess != allChecksSuccessful {
-				c.ui.app.QueueUpdate(func() {
-					c.ui.activateUserPrompt()
-				})
-			}
-			c.ui.app.QueueUpdateDraw(func() {})
-			c.state.lastCheckAllSuccess = allChecksSuccessful
+
 		}
 	}()
+}
+
+func (c *Controller) updateCheckWidgets(res checks.CheckResult) {
+	// Update the widgets
+	switch res.Type {
+	case checks.CheckTypeReleaseImagePull:
+		c.ui.app.QueueUpdateDraw(func() {
+			if res.Success {
+				c.ui.markCheckSuccess(0, 0)
+			} else {
+				c.ui.markCheckFail(0, 0)
+				c.ui.appendNewErrorToDetails("Release image pull error", res.Details)
+			}
+		})
+	case checks.CheckTypeReleaseImageHostDNS:
+		c.ui.app.QueueUpdateDraw(func() {
+			if res.Success {
+				c.ui.markCheckSuccess(1, 0)
+			} else {
+				c.ui.markCheckFail(1, 0)
+				c.ui.appendNewErrorToDetails("nslookup failure", res.Details)
+			}
+		})
+	case checks.CheckTypeReleaseImageHostPing:
+		c.ui.app.QueueUpdateDraw(func() {
+			if res.Success {
+				c.ui.markCheckSuccess(2, 0)
+			} else {
+				c.ui.markCheckFail(2, 0)
+				c.ui.appendNewErrorToDetails("ping failure", res.Details)
+			}
+		})
+	case checks.CheckTypeReleaseImageHttp:
+		c.ui.app.QueueUpdateDraw(func() {
+			if res.Success {
+				c.ui.markCheckSuccess(3, 0)
+			} else {
+				c.ui.markCheckFail(3, 0)
+				c.ui.appendNewErrorToDetails("http server not responding", res.Details)
+			}
+		})
+	}
 }

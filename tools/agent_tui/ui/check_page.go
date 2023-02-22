@@ -15,7 +15,7 @@ const (
 	RELEASE_IMAGE_LABEL     string = "Release Image"
 	CONFIGURE_BUTTON        string = "<Configure network>"
 	QUIT_BUTTON             string = "<Quit>"
-	CHECK_PAGE_NAME         string = "checkScreen"
+	PAGE_CHECKSCREEN        string = "checkScreen"
 )
 
 func (u *UI) markCheckSuccess(row int, col int) {
@@ -106,10 +106,7 @@ func (u *UI) createCheckPage(config checks.Config) {
 	u.form.SetBackgroundColor(newt.ColorGray)
 	u.form.SetButtonsAlign(tview.AlignCenter)
 	u.form.AddButton(CONFIGURE_BUTTON, func() {
-		u.setIsNMTuiActive(true)
-		f := u.NMTUIRunner(nil)
-		f()
-		u.setIsNMTuiActive(false)
+		u.ShowNMTUI(nil)
 	})
 	u.form.AddButton(QUIT_BUTTON, func() {
 		u.app.Stop()
@@ -169,7 +166,7 @@ func (u *UI) createCheckPage(config checks.Config) {
 
 	u.pages.SetBackgroundColor(newt.ColorBlue)
 
-	u.pages.AddPage(CHECK_PAGE_NAME, flex, true, true)
+	u.pages.AddPage(PAGE_CHECKSCREEN, flex, true, true)
 
-	u.app.SetRoot(u.pages, true).SetFocus(u.form).EnableMouse(true)
+	u.app.SetRoot(u.pages, true).SetFocus(u.form)
 }
