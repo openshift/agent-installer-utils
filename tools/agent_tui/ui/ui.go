@@ -17,8 +17,8 @@ type UI struct {
 	form                *tview.Form     // contains "Configure network" button
 	timeoutModal        *tview.Modal    // popup window that times out
 	splashScreen        *tview.Modal    // display initial waiting message
-	nmtuiActive         atomic.Bool
-	timeoutDialogActive atomic.Bool
+	nmtuiActive         atomic.Value
+	timeoutDialogActive atomic.Value
 	timeoutDialogCancel chan bool
 }
 
@@ -27,6 +27,8 @@ func NewUI(app *tview.Application, config checks.Config) *UI {
 		app:                 app,
 		timeoutDialogCancel: make(chan bool),
 	}
+	ui.nmtuiActive.Store(false)
+	ui.timeoutDialogActive.Store(false)
 	ui.create(config)
 	return ui
 }
@@ -49,7 +51,7 @@ func (u *UI) returnFocusToChecks() {
 }
 
 func (u *UI) IsNMTuiActive() bool {
-	return u.nmtuiActive.Load()
+	return u.nmtuiActive.Load().(bool)
 }
 
 func (u *UI) setIsTimeoutDialogActive(isActive bool) {
@@ -57,7 +59,7 @@ func (u *UI) setIsTimeoutDialogActive(isActive bool) {
 }
 
 func (u *UI) IsTimeoutDialogActive() bool {
-	return u.timeoutDialogActive.Load()
+	return u.timeoutDialogActive.Load().(bool)
 }
 
 func (u *UI) create(config checks.Config) {
