@@ -37,7 +37,7 @@ func TestChecksPage(t *testing.T) {
 					appConfig.ReleaseImageURL,
 					"✓ podman pull release image",
 					"✓ nslookup quay.io",
-					"✓ quay.io does not respond to ping, ping skipped")
+					"? quay.io does not respond to ping, ping skipped")
 			},
 		},
 		{
