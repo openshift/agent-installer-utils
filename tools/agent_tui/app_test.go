@@ -34,10 +34,10 @@ func TestChecksPage(t *testing.T) {
 				tester.SelectItem(ui.YES_BUTTON)
 				tester.WaitForScreenContent(
 					"Agent installer network boot setup",
-					appConfig.ReleaseImageURL,
-					"✓ podman pull release image",
+					"✓ quay.io/openshift-release-dev/ocp-release:4.12.2-x86_64",
 					"✓ nslookup quay.io",
-					"? quay.io does not respond to ping, ping skipped")
+					"✖ ping quay.io",
+					"✓ quay.io responds to http GET")
 			},
 		},
 		{
@@ -50,10 +50,10 @@ func TestChecksPage(t *testing.T) {
 				tester := app.Start(appConfig)
 				tester.WaitForScreenContent(
 					"Agent installer network boot setup",
-					appConfig.ReleaseImageURL,
-					"✖ podman pull release image",
+					"✖ localhost:8888/missing",
 					"✖ nslookup localhost",
-					"✓ ping localhost")
+					"✓ ping localhost",
+					"✖ localhost responds to http GET")
 
 				// TODO: There is a limitation in apptester
 				// where the full error details are not displayed
