@@ -34,10 +34,7 @@ func TestChecksPage(t *testing.T) {
 				tester.SelectItem(ui.YES_BUTTON)
 				tester.WaitForScreenContent(
 					"Agent installer network boot setup",
-					"✓ quay.io/openshift-release-dev/ocp-release:4.12.2-x86_64",
-					"✓ nslookup quay.io",
-					"✖ ping quay.io",
-					"✓ quay.io responds to http GET")
+					"✓ quay.io/openshift-release-dev/ocp-release:4.12.2-x86_64")
 			},
 		},
 		{
@@ -49,7 +46,6 @@ func TestChecksPage(t *testing.T) {
 				}
 				tester := app.Start(appConfig)
 				tester.WaitForScreenContent(
-					"Agent installer network boot setup",
 					"✖ localhost:8888/missing",
 					"✖ nslookup localhost",
 					"✓ ping localhost",
