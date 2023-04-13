@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/openshift/agent-installer-utils/pkg/version"
 	"github.com/sirupsen/logrus"
 )
 
@@ -159,6 +160,8 @@ func NewEngine(c chan CheckResult, config Config) *Engine {
 	logger.Out = f
 
 	logger.Infof("Release Image URL: %s", config.ReleaseImageURL)
+	logger.Infof("Agent TUI git version: %s", version.Commit)
+	logger.Infof("Agent TUI build version: %s", version.Raw)
 
 	e := &Engine{
 		checks:  checks,
