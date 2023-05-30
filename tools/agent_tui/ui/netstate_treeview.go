@@ -55,7 +55,7 @@ func (u *UI) ModalTreeView(netState net.NetState) (tview.Primitive, error) {
 	if err != nil {
 		return nil, err
 	}
-	width := 45
+	width := 60
 	height := 40
 	return tview.NewFlex().
 		AddItem(nil, 0, 1, false).
