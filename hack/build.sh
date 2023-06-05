@@ -16,6 +16,14 @@ function go_version_check() {
 
 function build() {
 	declare -r mode=${MODE:-release}
+	VERSION_URI=$1
+	SOURCE_GIT_COMMIT=$2
+	BUILD_VERSION=$3
+
+	echo "Agent tui git version: ${SOURCE_GIT_COMMIT}"
+	echo "Agent tui build version: ${BUILD_VERSION}"
+
+	export LDFLAGS="-X ${VERSION_URI}.Commit=${SOURCE_GIT_COMMIT} -X ${VERSION_URI}.Raw=${BUILD_VERSION}"
 
 	case "$mode" in
 	release)
@@ -38,5 +46,8 @@ function build() {
 # Only run this if not being sourced
 if ! (return 0 2>/dev/null); then
 	go_version_check
-	build
+	VERSION_URI=$1
+	SOURCE_GIT_COMMIT=$2
+	BUILD_VERSION=$3
+	build $VERSION_URI $SOURCE_GIT_COMMIT $BUILD_VERSION
 fi
