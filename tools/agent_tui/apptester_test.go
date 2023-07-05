@@ -1,6 +1,7 @@
 package agent_tui
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -29,6 +30,9 @@ type AppTester struct {
 	t      *testing.T
 	screen tcell.SimulationScreen
 	app    *tview.Application
+
+	checkResults map[string]string
+	wrapper      checks.CheckFunction
 }
 
 // Creates a new instance of AppTester
@@ -42,16 +46,30 @@ func NewAppTester(t *testing.T, debug ...bool) *AppTester {
 		t.Fatalf("Failed to initialize screen: %v", err)
 	}
 
-	return &AppTester{
-		t:      t,
-		screen: s,
-		app:    tview.NewApplication().SetScreen(s),
+	app := &AppTester{
+		t:            t,
+		screen:       s,
+		app:          tview.NewApplication().SetScreen(s),
+		checkResults: make(map[string]string),
 	}
+	app.wrapper = func(checkType string, config checks.Config) ([]byte, error) {
+		res, found := app.checkResults[checkType]
+		if !found || res == "" {
+			return []byte("Ok"), nil
+		}
+		return []byte(res), errors.New(res)
+	}
+	return app
 }
 
 // Starts a new Agent TUI in background
 func (a *AppTester) Start(config checks.Config) *AppTester {
-	go App(a.app, config)
+	go App(a.app, config, checks.CheckFunctions{
+		checks.CheckTypeReleaseImageHostDNS:  a.wrapper,
+		checks.CheckTypeReleaseImageHostPing: a.wrapper,
+		checks.CheckTypeReleaseImageHttp:     a.wrapper,
+		checks.CheckTypeReleaseImagePull:     a.wrapper,
+	})
 	return a
 }
 
@@ -203,4 +221,49 @@ func (a *AppTester) DumpScreen() *AppTester {
 	a.t.Log(rows)
 
 	return a
+}
+
+func (a *AppTester) setCheckResult(cType string, res string) *AppTester {
+	a.checkResults[cType] = res
+	return a
+}
+
+// Set the error for the next pull image checks.
+func (a *AppTester) SetPullCheckError(res string) *AppTester {
+	return a.setCheckResult(checks.CheckTypeReleaseImagePull, res)
+}
+
+// Reset pull check results.
+func (a *AppTester) SetPullCheckOk() *AppTester {
+	return a.setCheckResult(checks.CheckTypeReleaseImagePull, "")
+}
+
+// Set the error for the next http get checks.
+func (a *AppTester) SetHttpCheckError(res string) *AppTester {
+	return a.setCheckResult(checks.CheckTypeReleaseImageHttp, res)
+}
+
+// Reset http get check results.
+func (a *AppTester) SetHttpCheckOk() *AppTester {
+	return a.setCheckResult(checks.CheckTypeReleaseImageHttp, "")
+}
+
+// Set the error for the next ping checks.
+func (a *AppTester) SetPingCheckError(res string) *AppTester {
+	return a.setCheckResult(checks.CheckTypeReleaseImageHostPing, res)
+}
+
+// Reset ping check results.
+func (a *AppTester) SetPingCheckOk() *AppTester {
+	return a.setCheckResult(checks.CheckTypeReleaseImageHostPing, "")
+}
+
+// Set the error for the next DNS checks.
+func (a *AppTester) SetDNSCheckError(res string) *AppTester {
+	return a.setCheckResult(checks.CheckTypeReleaseImageHostDNS, res)
+}
+
+// Reset DNS check results.
+func (a *AppTester) SetDNSCheckOk() *AppTester {
+	return a.setCheckResult(checks.CheckTypeReleaseImageHostDNS, "")
 }
