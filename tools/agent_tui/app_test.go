@@ -14,6 +14,48 @@ func TestChecksPage(t *testing.T) {
 		steps  func(app *AppTester)
 	}{
 		{
+			name: "initial check failure with recover",
+			steps: func(app *AppTester) {
+				appConfig := checks.Config{
+					ReleaseImageURL: "quay.io/openshift-release-dev/ocp-release:4.12.2-x86_64",
+					LogPath:         "/tmp/delete-me",
+				}
+
+				// initially the network isn't up yet, so the check will fail
+				app.SetPullCheckError("Trying to pull quay.io/openshift-release-dev/ocp-release:4.12.2-x86_64\nError: initializing source docker://quay.io/openshift-release-dev/ocp-release:4.12.2-x86_64: can't talk to a V1 container registry\n")
+				tester := app.Start(appConfig)
+				tester.WaitForScreenContent("✖ quay.io/openshift-release-dev/ocp-release:4.12.2-x86_64")
+
+				// after a while, the network goes up, and the timeout dialog appears
+				app.SetPullCheckOk()
+				tester.WaitForScreenContent(
+					"Agent-based installer",
+					"connectivity checks passed",
+					"This prompt will timeout")
+			},
+		},
+		{
+			name: "initial check failure with user interaction",
+			steps: func(app *AppTester) {
+				appConfig := checks.Config{
+					ReleaseImageURL: "quay.io/openshift-release-dev/ocp-release:4.12.2-x86_64",
+					LogPath:         "/tmp/delete-me",
+				}
+
+				// initially the network isn't up yet, so the check will fail
+				app.SetPullCheckError("Trying to pull quay.io/openshift-release-dev/ocp-release:4.12.2-x86_64\nError: initializing source docker://quay.io/openshift-release-dev/ocp-release:4.12.2-x86_64: can't talk to a V1 container registry\n")
+				tester := app.Start(appConfig)
+				tester.WaitForScreenContent("✖ quay.io/openshift-release-dev/ocp-release:4.12.2-x86_64")
+
+				// simulate the user touching the interface
+				app.ScreenPressTab()
+
+				// after a while, the network goes up, but since the user took control then the timeout dialog will not appear
+				app.SetPullCheckOk()
+				tester.WaitForScreenContent("✓ quay.io/openshift-release-dev/ocp-release:4.12.2-x86_64")
+			},
+		},
+		{
 			name: "success, all checks pass, verify app switches to prompt with timeout",
 			steps: func(app *AppTester) {
 				appConfig := checks.Config{
@@ -44,6 +86,10 @@ func TestChecksPage(t *testing.T) {
 					ReleaseImageURL: "localhost:8888/missing",
 					LogPath:         "/tmp/delete-me",
 				}
+				app.SetPullCheckError("Trying to pull localhost:8888/missing\nError: initializing source docker://localhost:8888/missing: can't talk to a V1 container registry\n")
+				app.SetHttpCheckError("no such host")
+				app.SetDNSCheckError("dns error")
+
 				tester := app.Start(appConfig)
 				tester.WaitForScreenContent(
 					"✖ localhost:8888/missing",
