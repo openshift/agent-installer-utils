@@ -1,6 +1,6 @@
 module github.com/openshift/agent-installer-utils
 
-go 1.18
+go 1.22
 
 require (
 	github.com/gdamore/tcell/v2 v2.5.4
