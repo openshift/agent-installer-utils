@@ -9,8 +9,9 @@ type Controller struct {
 	ui      *UI
 	channel chan checks.CheckResult
 
-	checks map[string]checks.CheckResult
-	state  bool
+	checks          map[string]checks.CheckResult
+	state           bool
+	rendezvousIPSet bool
 }
 
 func NewController(ui *UI) *Controller {
@@ -39,9 +40,12 @@ func (c *Controller) receivedPrimaryCheck(numChecks int) bool {
 	return found
 }
 
-func (c *Controller) Init(numChecks int) {
-
+func (c *Controller) Init(numChecks int, rendezvousIP string) {
 	c.ui.ShowSplashScreen()
+
+	if rendezvousIP == "" {
+		c.ui.setFocusToRendezvousIP()
+	}
 
 	go func() {
 		for {
@@ -57,6 +61,12 @@ func (c *Controller) Init(numChecks int) {
 			// When nmtui is shown the UI is suspended, so
 			// let's skip any update
 			if c.ui.IsNMTuiActive() {
+				continue
+			}
+
+			// Checks are suspended if rendezvous IP form
+			// is active
+			if c.ui.IsRendezvousIPFormActive() {
 				continue
 			}
 

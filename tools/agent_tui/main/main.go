@@ -11,6 +11,8 @@ import (
 func main() {
 	releaseImage := os.Getenv("RELEASE_IMAGE")
 	logPath := os.Getenv("AGENT_TUI_LOG_PATH")
+	nodeZeroIP := os.Getenv("NODE_ZERO_IP")
+
 	if releaseImage == "" {
 		fmt.Println("RELEASE_IMAGE environment variable is not specified.")
 		fmt.Println("Unable to perform connectivity checks.")
@@ -25,5 +27,5 @@ func main() {
 		ReleaseImageURL: releaseImage,
 		LogPath:         logPath,
 	}
-	agent_tui.App(nil, config)
+	agent_tui.App(nil, nodeZeroIP, config)
 }

@@ -11,11 +11,11 @@ import (
 )
 
 const (
-	CONFIGURE_NETWORK_LABEL string = "Configure Networking"
-	RELEASE_IMAGE_LABEL     string = "Release Image"
-	CONFIGURE_BUTTON        string = "<Configure network>"
-	QUIT_BUTTON             string = "<Quit>"
-	PAGE_CHECKSCREEN        string = "checkScreen"
+	CONFIGURE_NETWORK_LABEL   string = "Configure Networking"
+	RELEASE_IMAGE_LABEL       string = "Release Image"
+	CONFIGURE_BUTTON          string = "<Configure network>"
+	QUIT_BUTTON               string = "<Quit>"
+	PAGE_CHECKSCREEN          string = "checkScreen"
 
 	mainFlexHeight            = 10
 	mainFlexWithDetailsHeight = 30
@@ -127,11 +127,11 @@ func (u *UI) createCheckPage(config checks.Config) {
 	u.details.SetBackgroundColor(newt.ColorGray)
 	u.details.SetTitleColor(newt.ColorBlack)
 
-	u.form = tview.NewForm()
-	u.form.SetBorder(false)
-	u.form.SetBackgroundColor(newt.ColorGray)
-	u.form.SetButtonsAlign(tview.AlignCenter)
-	u.form.AddButton(CONFIGURE_BUTTON, func() {
+	u.netConfigForm = tview.NewForm()
+	u.netConfigForm.SetBorder(false)
+	u.netConfigForm.SetBackgroundColor(newt.ColorGray)
+	u.netConfigForm.SetButtonsAlign(tview.AlignCenter)
+	u.netConfigForm.AddButton(CONFIGURE_BUTTON, func() {
 		if err := u.ShowNMTUI(); err != nil {
 			errorDialog := tview.NewModal().
 				SetBackgroundColor(newt.ColorBlack).
@@ -143,18 +143,18 @@ func (u *UI) createCheckPage(config checks.Config) {
 			u.pages.AddPage("error", errorDialog, false, true)
 		}
 	})
-	u.form.AddButton(QUIT_BUTTON, func() {
+	u.netConfigForm.AddButton(QUIT_BUTTON, func() {
 		u.app.Stop()
 	})
-	u.form.SetButtonActivatedStyle(tcell.StyleDefault.Background(newt.ColorRed).
+	u.netConfigForm.SetButtonActivatedStyle(tcell.StyleDefault.Background(newt.ColorRed).
 		Foreground(newt.ColorGray))
-	u.form.SetButtonStyle(tcell.StyleDefault.Background(newt.ColorGray).
+	u.netConfigForm.SetButtonStyle(tcell.StyleDefault.Background(newt.ColorGray).
 		Foreground(newt.ColorBlack))
 
 	u.mainFlex = tview.NewFlex().
 		SetDirection(tview.FlexRow).
 		AddItem(u.primaryCheck, 5, 0, false).
-		AddItem(u.form, 3, 0, false)
+		AddItem(u.netConfigForm, 3, 0, false)
 	u.mainFlex.SetTitle("  Agent installer network boot setup  ").
 		SetTitleColor(newt.ColorRed).
 		SetBorder(true).
@@ -168,8 +168,8 @@ func (u *UI) createCheckPage(config checks.Config) {
 
 	// Initially, only the form buttons can receive the focus
 	u.focusableItems = []tview.Primitive{
-		u.form.GetButton(0),
-		u.form.GetButton(1),
+		u.netConfigForm.GetButton(0),
+		u.netConfigForm.GetButton(1),
 	}
 	// Allow the user to cycle the focus only over the configured items
 	u.mainFlex.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -203,7 +203,7 @@ func (u *UI) createCheckPage(config checks.Config) {
 
 	u.pages.SetBackgroundColor(newt.ColorBlue)
 	u.pages.AddPage(PAGE_CHECKSCREEN, flex, true, true)
-	u.app.SetRoot(u.pages, true).SetFocus(u.form)
+	u.app.SetRoot(u.pages, true).SetFocus(u.netConfigForm)
 }
 
 func (u *UI) additionalChecksVisible() bool {
@@ -235,10 +235,10 @@ func (u *UI) ShowAdditionalChecks() {
 	}
 
 	u.mainFlex.
-		RemoveItem(u.form).
+		RemoveItem(u.netConfigForm).
 		AddItem(u.checks, 5, 0, false).
 		AddItem(u.details, 15, 0, false).
-		AddItem(u.form, 3, 0, false)
+		AddItem(u.netConfigForm, 3, 0, false)
 	u.innerFlex.ResizeItem(u.mainFlex, mainFlexWithDetailsHeight, 0)
 
 	// Details can be focused again
