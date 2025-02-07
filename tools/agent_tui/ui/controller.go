@@ -45,6 +45,8 @@ func (c *Controller) Init(numChecks int, rendezvousIP string) {
 
 	if rendezvousIP == "" {
 		c.ui.setFocusToRendezvousIP()
+	} else {
+		c.ui.setFocusToChecks()
 	}
 
 	go func() {
@@ -83,7 +85,7 @@ func (c *Controller) Init(numChecks int, rendezvousIP string) {
 					if c.state {
 						c.ui.ShowTimeoutDialog()
 					} else {
-						c.ui.returnFocusToChecks()
+						c.ui.setFocusToChecks()
 					}
 				})
 				continue

@@ -138,7 +138,7 @@ func (u *UI) createCheckPage(config checks.Config) {
 				SetText(err.Error()).
 				AddButtons([]string{"Ok"}).
 				SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-					u.returnFocusToChecks()
+					u.setFocusToChecks()
 				})
 			u.pages.AddPage("error", errorDialog, false, true)
 		}

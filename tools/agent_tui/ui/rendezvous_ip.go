@@ -14,7 +14,8 @@ import (
 
 const (
 	PAGE_RENDEZVOUS_IP        = "rendezvousIPScreen"
-	FIELD_CURRENT_HOST_IP     = "Current Host IPs"
+	FIELD_CURRENT_HOST_IP     = "Host IPs"
+	FIELD_SET_IP              = "Use Host IP as Rendezvous"
 	FIELD_RENDEZVOUS_HOST_IP  = "Rendezvous Host IP"
 	SAVE_RENDEZVOUS_IP_BUTTON = "<Save Rendezvous IP Address>"
 )
@@ -33,6 +34,16 @@ func (u *UI) createRendezvousIPPage(config checks.Config) {
 	u.rendezvousIPForm.SetButtonsAlign(tview.AlignCenter)
 	u.rendezvousIPForm.AddInputField(FIELD_CURRENT_HOST_IP, strings.Join(u.hostIPAddresses()[:2], ","), 55, nil, nil)
 	u.rendezvousIPForm.AddInputField(FIELD_RENDEZVOUS_HOST_IP, "", 55, nil, nil)
+	u.rendezvousIPForm.AddCheckbox(FIELD_SET_IP, false, func(checked bool) {
+		field := u.rendezvousIPForm.GetFormItemByLabel(FIELD_RENDEZVOUS_HOST_IP).(*tview.InputField)
+		if checked && len(u.hostIPAddresses()) > 0 {
+			field.SetText(u.hostIPAddresses()[0])
+		} else {
+			// unchecked, reset rendezvou IP field
+			field.SetText("")
+		}
+	})
+
 	u.rendezvousIPForm.AddButton(SAVE_RENDEZVOUS_IP_BUTTON, func() {
 		// save rendezvous IP address and switch to checks page
 		ipAddress := u.rendezvousIPForm.GetFormItemByLabel(FIELD_RENDEZVOUS_HOST_IP).(*tview.InputField).GetText()
@@ -46,7 +57,7 @@ func (u *UI) createRendezvousIPPage(config checks.Config) {
 			} else {
 				// set focus to checks page and let controller know rendezvousIP is set
 				u.setIsRendezousIPFormActive(false)
-				u.returnFocusToChecks()
+				u.setFocusToChecks()
 			}
 		}
 	})
@@ -57,7 +68,7 @@ func (u *UI) createRendezvousIPPage(config checks.Config) {
 
 	mainFlex := tview.NewFlex().
 		SetDirection(tview.FlexRow).
-		AddItem(u.rendezvousIPForm, 8, 0, false)
+		AddItem(u.rendezvousIPForm, 8+2, 0, false)
 	mainFlex.SetTitle("  Rendezvous Host IP Setup  ").
 		SetTitleColor(newt.ColorRed).
 		SetBorder(true).
@@ -66,7 +77,7 @@ func (u *UI) createRendezvousIPPage(config checks.Config) {
 
 	innerFlex := tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(nil, 0, 1, false).
-		AddItem(mainFlex, mainFlexHeight, 0, false).
+		AddItem(mainFlex, mainFlexHeight+2, 0, false).
 		AddItem(nil, 0, 1, false)
 
 	// Allow the user to cycle the focus only over the configured items
@@ -113,7 +124,7 @@ func validateIP(ipAddress string) string {
 func (u *UI) hostIPAddresses() []string {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		u.logger.Errorf("Could not fetch host IPs: err", err)
+		u.logger.Errorf("Could not fetch host IPs: %v", err)
 	}
 	ipv4 := []string{}
 	ipv6 := []string{}

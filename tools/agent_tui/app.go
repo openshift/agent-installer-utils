@@ -31,6 +31,7 @@ func App(app *tview.Application, rendezvousIP string, config checks.Config, chec
 	logger.Infof("Release Image URL: %s", config.ReleaseImageURL)
 	logger.Infof("Agent TUI git version: %s", version.Commit)
 	logger.Infof("Agent TUI build version: %s", version.Raw)
+	logger.Infof("NODE_ZERO_IP: %s", rendezvousIP)
 
 	var appUI *ui.UI
 	if app == nil {
