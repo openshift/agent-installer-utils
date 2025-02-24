@@ -1,0 +1,13 @@
+[Unit]
+Description=Set up agent-tui and nmstate libraries
+After=run-media-iso.mount
+Before=agent-interactive-console.service
+Requires=run-media-iso.mount
+
+[Service]
+Type=oneshot
+
+ExecStart=/bin/bash /run/media/iso/agent-artifacts/setup-agent-tui.sh
+
+[Install]
+WantedBy=multi-user.target
