@@ -18,6 +18,7 @@ const (
 	FIELD_SET_IP              = "Use Host IP as Rendezvous"
 	FIELD_RENDEZVOUS_HOST_IP  = "Rendezvous Host IP"
 	SAVE_RENDEZVOUS_IP_BUTTON = "<Save Rendezvous IP Address>"
+	RENDEZVOUS_HOST_ENV_PATH  = "/etc/assisted/rendezvous-host.env"
 )
 
 func (u *UI) createRendezvousIPPage(config checks.Config) {
@@ -39,7 +40,7 @@ func (u *UI) createRendezvousIPPage(config checks.Config) {
 		if checked && len(u.hostIPAddresses()) > 0 {
 			field.SetText(u.hostIPAddresses()[0])
 		} else {
-			// unchecked, reset rendezvou IP field
+			// unchecked, reset rendezvous IP field
 			field.SetText("")
 		}
 	})
@@ -143,7 +144,7 @@ func (u *UI) hostIPAddresses() []string {
 }
 
 func saveIPAddress(ipAddress string) error {
-	cmd := exec.Command("sed", "-i", fmt.Sprintf("s/^NODE_ZERO_IP=.*/NODE_ZERO_IP=%s/", ipAddress), "/etc/assisted/rendezvous-host.env")
+	cmd := exec.Command("sed", "-i", fmt.Sprintf("s/^NODE_ZERO_IP=.*/NODE_ZERO_IP=%s/", ipAddress), RENDEZVOUS_HOST_ENV_PATH)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
