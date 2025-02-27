@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"log"
 
 	"github.com/joho/godotenv"
 
@@ -33,7 +32,6 @@ func main() {
 	agent_tui.App(nil, getRendezvousIP(), config)
 }
 
-
 // The rendezvous IP address can be passed into AGENT_TUI
 // through the NODE_ZERO_IP environment variable.
 // If NODE_ZERO_IP is unset through the environment variable,
@@ -45,7 +43,7 @@ func getRendezvousIP() string {
 	if nodeZeroIP == "" {
 		envMap, err := godotenv.Read(ui.RENDEZVOUS_HOST_ENV_PATH)
 		if err != nil {
-			log.Fatalf("Could not read %s", ui.RENDEZVOUS_HOST_ENV_PATH)
+			return ""
 		}
 		nodeZeroIP = envMap["NODE_ZERO_IP"]
 	}

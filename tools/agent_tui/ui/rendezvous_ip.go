@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"net"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -14,10 +15,10 @@ import (
 
 const (
 	PAGE_RENDEZVOUS_IP        = "rendezvousIPScreen"
-	FIELD_CURRENT_HOST_IP     = "Host IPs"
-	FIELD_SET_IP              = "Use Host IP as Rendezvous"
-	FIELD_RENDEZVOUS_HOST_IP  = "Rendezvous Host IP"
-	SAVE_RENDEZVOUS_IP_BUTTON = "<Save Rendezvous IP Address>"
+	FIELD_CURRENT_HOST_IP     = "Current node IPs"
+	FIELD_SET_IP              = "Use current node IP as rendezvous"
+	FIELD_RENDEZVOUS_HOST_IP  = "Rendezvous node IP"
+	SAVE_RENDEZVOUS_IP_BUTTON = "<Save and continue>"
 	RENDEZVOUS_HOST_ENV_PATH  = "/etc/assisted/rendezvous-host.env"
 )
 
@@ -52,7 +53,7 @@ func (u *UI) createRendezvousIPPage(config checks.Config) {
 		if validationError != "" {
 			u.ShowErrorDialog(fmt.Sprintf(invalidIPText, ipAddress))
 		} else {
-			err := saveIPAddress(ipAddress)
+			err := saveRendezvousIPAddress(ipAddress)
 			if err != nil {
 				u.ShowErrorDialog(fmt.Sprintf(saveRendezvousIPError, err.Error()))
 			} else {
@@ -143,12 +144,39 @@ func (u *UI) hostIPAddresses() []string {
 	return append(ipv4, ipv6...)
 }
 
-func saveIPAddress(ipAddress string) error {
-	cmd := exec.Command("sed", "-i", fmt.Sprintf("s/^NODE_ZERO_IP=.*/NODE_ZERO_IP=%s/", ipAddress), RENDEZVOUS_HOST_ENV_PATH)
+func saveRendezvousIPAddress(ipAddress string) error {
+	_, err := os.Stat(RENDEZVOUS_HOST_ENV_PATH)
+	if os.IsNotExist(err) {
+		// TODO: Should we not expect RENDEZVOUS_HOST_ENV_PATH to always exist?
+		// If so, this block can be removed.
+		file, err := os.OpenFile(RENDEZVOUS_HOST_ENV_PATH, os.O_WRONLY|os.O_CREATE, 0644)
+		if err != nil {
+			return fmt.Errorf("could not create and/or write to %s", RENDEZVOUS_HOST_ENV_PATH)
+		}
+		defer file.Close()
 
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("sed command failed: %v out: %v", err, string(output))
+		_, err = file.WriteString(fmt.Sprintf("NODE_ZERO_IP=%s\nSERVICE_BASE_URL=http://%s:8090/\nIMAGE_SERVICE_BASE_URL=http://%s:8888/\n", ipAddress, ipAddress, ipAddress))
+		if err != nil {
+			return fmt.Errorf("error writing NODE_ZERO_IP to %s", RENDEZVOUS_HOST_ENV_PATH)
+		}
+	} else {
+		cmd := exec.Command("sed", "-i", fmt.Sprintf("s/^NODE_ZERO_IP=.*/NODE_ZERO_IP=%s/", ipAddress), RENDEZVOUS_HOST_ENV_PATH)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("NODE_ZERO_IP update failed: %v out: %v", err, string(output))
+		}
+
+		cmd = exec.Command("sed", "-i", fmt.Sprintf("s/^SERVICE_BASE_URL=.*/SERVICE_BASE_URL=http:\\/\\/%s:8090\\//", ipAddress), RENDEZVOUS_HOST_ENV_PATH)
+		output, err = cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("SERVICE_BASE_URL update failed: %v out: %v", err, string(output))
+		}
+
+		cmd = exec.Command("sed", "-i", fmt.Sprintf("s/^IMAGE_SERVICE_BASE_URL=.*/IMAGE_SERVICE_BASE_URL=http:\\/\\/%s:8888\\//", ipAddress), RENDEZVOUS_HOST_ENV_PATH)
+		output, err = cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("IMAGE_SERVICE_BASE_URL update failed: %v out: %v", err, string(output))
+		}
 	}
 	return nil
 }
