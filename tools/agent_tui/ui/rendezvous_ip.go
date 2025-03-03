@@ -23,13 +23,6 @@ const (
 )
 
 func (u *UI) createRendezvousIPPage(config checks.Config) {
-	primaryCheck := tview.NewTable()
-	primaryCheck.SetBorder(true)
-	primaryCheck.SetTitle("  Current Host IPs  ")
-	primaryCheck.SetBorderColor(newt.ColorBlack)
-	primaryCheck.SetBackgroundColor(newt.ColorGray)
-	primaryCheck.SetTitleColor(newt.ColorBlack)
-
 	u.rendezvousIPForm = tview.NewForm()
 	u.rendezvousIPForm.SetBorder(false)
 	u.rendezvousIPForm.SetBackgroundColor(newt.ColorGray)
@@ -132,7 +125,7 @@ func (u *UI) hostIPAddresses() []string {
 	ipv6 := []string{}
 	for _, addr := range addrs {
 		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-			if ipnet.IP.To4() != nil {
+			if ipnet.IP.To4() != nil && !ipnet.IP.IsLinkLocalUnicast() {
 				ipv4 = append(ipv4, ipnet.IP.String())
 			} else if ipnet.IP.To16() != nil {
 				ipv6 = append(ipv6, ipnet.IP.String())
