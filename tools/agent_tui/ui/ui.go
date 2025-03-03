@@ -24,9 +24,13 @@ type UI struct {
 	timeoutDialogCancel chan bool
 	dirty               atomic.Value // dirty flag set if the user interacts with the ui
 
-	rendezvousIPForm       *tview.Form
-	errorModal             *tview.Modal
-	rendezvousIPFormActive atomic.Value
+	// Rendezvous node IP workflow
+	rendezvousIPForm            *tview.Form
+	selectIPForm                *tview.Form
+	selectIPList                *tview.List
+	errorModal                  *tview.Modal
+	rendezvousIPFormActive      atomic.Value
+	rendezvousIPSaveSuccessModal *tview.Modal
 
 	focusableItems []tview.Primitive // the list of widgets that can be focused
 	focusedItem    int               // the current focused widget
@@ -74,17 +78,21 @@ func (u *UI) setFocusToRendezvousIP() {
 	u.setIsRendezousIPFormActive(true)
 	// reset u.focusableItems to those on the rendezvous IP page
 	u.focusableItems = []tview.Primitive{
+		u.rendezvousIPForm.GetFormItemByLabel(FIELD_ENTER_RENDEZVOUS_IP),
+		u.selectIPForm.GetButton(0),
 		u.rendezvousIPForm.GetButton(0),
-		u.rendezvousIPForm.GetFormItemByLabel(FIELD_RENDEZVOUS_HOST_IP),
-		u.rendezvousIPForm.GetFormItemByLabel(FIELD_SET_IP),
 	}
 
 	u.pages.SwitchToPage(PAGE_RENDEZVOUS_IP)
-	// shifting focus back to the "Configure network"
-	// button requires setting focus in this sequence
-	// form -> form-button
 	u.app.SetFocus(u.rendezvousIPForm)
-	u.app.SetFocus(u.rendezvousIPForm.GetFormItemByLabel(FIELD_RENDEZVOUS_HOST_IP))
+	u.app.SetFocus(u.rendezvousIPForm.GetFormItemByLabel(FIELD_ENTER_RENDEZVOUS_IP))
+}
+
+func (u *UI) setFocusToSelectIP() {
+	u.setIsRendezousIPFormActive(true)
+	u.pages.SwitchToPage(PAGE_SET_NODE_AS_RENDEZVOUS)
+
+	u.app.SetFocus(u.selectIPList)
 }
 
 func (u *UI) IsNMTuiActive() bool {
@@ -118,6 +126,7 @@ func (u *UI) create(config checks.Config) {
 	u.createSplashScreen()
 	u.createRendezvousIPPage(config)
 	u.createErrorModal()
+	u.createSelectHostIPPage()
 	u.app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if !u.IsRendezvousIPFormActive() {
 			// Any interaction with the rendezvous IP form does

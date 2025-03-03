@@ -17,8 +17,6 @@ const (
 // to pages. The rendezvousIPForm does that when it validates the IP
 // address entered.
 func (u *UI) createErrorModal() {
-	// view is the modal asking the user if they would still
-	// like to change their network configuration.
 	u.errorModal = tview.NewModal().
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			if buttonLabel == OK_BUTTON {
@@ -35,12 +33,10 @@ func (u *UI) createErrorModal() {
 	userPromptButtons := []string{OK_BUTTON}
 	u.errorModal.AddButtons(userPromptButtons)
 
-	//u.invalidIPAddressModal.SetText(invalidIPText)
 	u.pages.AddPage(PAGE_ERROR_DIALOG, u.errorModal, true, false)
 }
 
 func (u *UI) ShowErrorDialog(errorText string) {
-	//u.setIsTimeoutDialogActive(true)
 	u.errorModal.SetText(errorText)
 	u.app.SetFocus(u.errorModal)
 	u.pages.ShowPage(PAGE_ERROR_DIALOG)

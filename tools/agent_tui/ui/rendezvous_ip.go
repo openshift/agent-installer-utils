@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	"net"
-	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/checks"
@@ -12,45 +11,58 @@ import (
 )
 
 const (
-	PAGE_RENDEZVOUS_IP        = "rendezvousIPScreen"
-	FIELD_CURRENT_HOST_IP     = "Current node IPs"
-	FIELD_SET_IP              = "Use current node IP as rendezvous"
-	FIELD_RENDEZVOUS_HOST_IP  = "Rendezvous node IP"
-	SAVE_RENDEZVOUS_IP_BUTTON = "<Save and continue>"
-	RENDEZVOUS_HOST_ENV_PATH  = "/etc/assisted/rendezvous-host.env"
+	PAGE_RENDEZVOUS_IP          = "rendezvousIPScreen"
+	PAGE_SET_NODE_AS_RENDEZVOUS = "setNodeAsRendezvousScreen"
+	FIELD_ENTER_RENDEZVOUS_IP   = "Rendezvous node IP"
+	SAVE_RENDEZVOUS_IP_BUTTON   = "<Save Rendezvous IP>"
+	SELECT_IP_ADDRESS_BUTTON    = "<Choose one of this node's IPs to be the Rendezvous node IP>"
+	RENDEZVOUS_HOST_ENV_PATH    = "/etc/assisted/rendezvous-host.env"
 )
+
+func (u *UI) createTextFlex(text string) *tview.Flex {
+	textView := tview.NewTextView()
+	textView.SetText(text)
+	textView.SetWordWrap(true)
+
+	flex := tview.NewFlex().
+		AddItem(textView, 0, 1, false)
+	flex.SetBorder(true)
+	flex.SetBorderColor(newt.ColorGray) // to keep the spacing but have the border invisible
+	return flex
+}
 
 func (u *UI) createRendezvousIPPage(config checks.Config) {
 	u.rendezvousIPForm = tview.NewForm()
 	u.rendezvousIPForm.SetBorder(false)
-	u.rendezvousIPForm.SetBackgroundColor(newt.ColorGray)
 	u.rendezvousIPForm.SetButtonsAlign(tview.AlignCenter)
-	u.rendezvousIPForm.AddInputField(FIELD_CURRENT_HOST_IP, strings.Join(u.hostIPAddresses()[:2], ","), 55, nil, nil)
-	u.rendezvousIPForm.AddInputField(FIELD_RENDEZVOUS_HOST_IP, "", 55, nil, nil)
-	u.rendezvousIPForm.AddCheckbox(FIELD_SET_IP, false, func(checked bool) {
-		field := u.rendezvousIPForm.GetFormItemByLabel(FIELD_RENDEZVOUS_HOST_IP).(*tview.InputField)
-		if checked && len(u.hostIPAddresses()) > 0 {
-			field.SetText(u.hostIPAddresses()[0])
-		} else {
-			// unchecked, reset rendezvous IP field
-			field.SetText("")
-		}
-	})
+
+	rendezvousIPFormDescription := "If you have already designated a node to be the rendezvous node, enter its IP address in the field below."
+	rendezvousTextFlex := u.createTextFlex(rendezvousIPFormDescription)
+	rendezvousTextNumRows := 5
+
+	u.rendezvousIPForm.AddInputField(FIELD_ENTER_RENDEZVOUS_IP, "", 55, nil, nil)
+	u.rendezvousIPForm.SetFieldTextColor(newt.ColorGray)
+
+	list := tview.NewList()
+	for i, ip := range u.hostIPAddresses() {
+		list.AddItem(ip, "", rune(i), nil)
+	}
 
 	u.rendezvousIPForm.AddButton(SAVE_RENDEZVOUS_IP_BUTTON, func() {
 		// save rendezvous IP address and switch to checks page
-		ipAddress := u.rendezvousIPForm.GetFormItemByLabel(FIELD_RENDEZVOUS_HOST_IP).(*tview.InputField).GetText()
+		ipAddress := u.rendezvousIPForm.GetFormItemByLabel(FIELD_ENTER_RENDEZVOUS_IP).(*tview.InputField).GetText()
 		validationError := validateIP(ipAddress)
 		if validationError != "" {
+			if ipAddress == "" {
+				ipAddress = "<blank>"
+			}
 			u.ShowErrorDialog(fmt.Sprintf(invalidIPText, ipAddress))
 		} else {
 			err := saveRendezvousIPAddress(ipAddress)
 			if err != nil {
 				u.ShowErrorDialog(fmt.Sprintf(saveRendezvousIPError, err.Error()))
 			} else {
-				// set focus to checks page and let controller know rendezvousIP is set
-				u.setIsRendezousIPFormActive(false)
-				u.setFocusToChecks()
+				u.showRendezvousIPSaveSuccessModal(ipAddress)
 			}
 		}
 	})
@@ -59,18 +71,35 @@ func (u *UI) createRendezvousIPPage(config checks.Config) {
 	u.rendezvousIPForm.SetButtonStyle(tcell.StyleDefault.Background(newt.ColorGray).
 		Foreground(newt.ColorBlack))
 
+	selectFormDescription := "If the rendezvous node has not been designated, this node can be designated as the rendezvous node by selecting one of its IP addresses to be the rendezvous node IP."
+	selectTextFlex := u.createTextFlex(selectFormDescription)
+	selectTextNumRows := 5
+
+	u.selectIPForm = tview.NewForm()
+	u.selectIPForm.SetBorder(false)
+	u.selectIPForm.SetButtonsAlign(tview.AlignCenter)
+	u.selectIPForm.AddButton(SELECT_IP_ADDRESS_BUTTON, func() {
+		// switch to select IP address page
+		u.setFocusToSelectIP()
+	})
+	u.selectIPForm.SetButtonActivatedStyle(tcell.StyleDefault.Background(newt.ColorRed).
+		Foreground(newt.ColorGray))
+	u.selectIPForm.SetButtonStyle(tcell.StyleDefault.Background(newt.ColorGray).
+		Foreground(newt.ColorBlack))
+
 	mainFlex := tview.NewFlex().
 		SetDirection(tview.FlexRow).
-		AddItem(u.rendezvousIPForm, 8+2, 0, false)
-	mainFlex.SetTitle("  Rendezvous Host IP Setup  ").
+		AddItem(rendezvousTextFlex, rendezvousTextNumRows, 0, false).
+		AddItem(u.rendezvousIPForm, 5, 0, false).
+		AddItem(selectTextFlex, selectTextNumRows, 0, false).
+		AddItem(u.selectIPForm, 4, 0, false)
+	mainFlex.SetTitle("  Rendezvous Node IP Setup  ").
 		SetTitleColor(newt.ColorRed).
-		SetBorder(true).
-		SetBackgroundColor(newt.ColorGray).
-		SetBorderColor(tcell.ColorBlack)
+		SetBorder(true)
 
 	innerFlex := tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(nil, 0, 1, false).
-		AddItem(mainFlex, mainFlexHeight+2, 0, false).
+		AddItem(mainFlex, mainFlexHeight+1+rendezvousTextNumRows+selectTextNumRows, 0, false).
 		AddItem(nil, 0, 1, false)
 
 	// Allow the user to cycle the focus only over the configured items
@@ -103,8 +132,56 @@ func (u *UI) createRendezvousIPPage(config checks.Config) {
 		AddItem(innerFlex, width, 1, false).
 		AddItem(nil, 0, 1, false)
 
-	u.pages.SetBackgroundColor(newt.ColorBlue)
 	u.pages.AddPage(PAGE_RENDEZVOUS_IP, flex, true, true)
+}
+
+func (u *UI) createSelectHostIPPage() {
+	u.selectIPList = tview.NewList()
+	backOption := "<Back>"
+	options := append(u.hostIPAddresses(), backOption)
+	for _, ip := range options {
+		u.selectIPList.AddItem(ip, "", rune(0), func() {
+			if ip == backOption {
+				u.setFocusToRendezvousIP()
+			} else {
+				err := saveRendezvousIPAddress(ip)
+				if err != nil {
+					u.ShowErrorDialog(fmt.Sprintf(saveRendezvousIPError, err.Error()))
+				} else {
+					u.showRendezvousIPSaveSuccessModal(ip)
+				}
+			}
+		})
+	}
+	u.selectIPList.SetSelectedBackgroundColor(newt.ColorRed)
+	u.selectIPList.SetSelectedTextColor(newt.ColorGray)
+	u.selectIPList.ShowSecondaryText(false)
+	u.selectIPList.SetBorderPadding(0, 0, 2, 2)
+
+	descriptionText := fmt.Sprintf("Select an IP address from this node to be the Rendezvous node IP.")
+	textFlex := u.createTextFlex(descriptionText)
+	textRows := 4
+
+	mainFlex := tview.NewFlex().
+		SetDirection(tview.FlexRow).
+		AddItem(textFlex, textRows, 0, false).
+		AddItem(u.selectIPList, len(options)+1, 0, false)
+	mainFlex.SetTitle("  Select an IP address to be the Rendezvous node IP  ").
+		SetTitleColor(newt.ColorRed).
+		SetBorder(true)
+
+	innerFlex := tview.NewFlex().SetDirection(tview.FlexRow).
+		AddItem(nil, 0, 1, false).
+		AddItem(mainFlex, len(options)+3+textRows, 0, false).
+		AddItem(nil, 0, 1, false)
+
+	width := 80
+	flex := tview.NewFlex().
+		AddItem(nil, 0, 1, false).
+		AddItem(innerFlex, width, 1, false).
+		AddItem(nil, 0, 1, false)
+
+	u.pages.AddPage(PAGE_SET_NODE_AS_RENDEZVOUS, flex, true, true)
 }
 
 func validateIP(ipAddress string) string {

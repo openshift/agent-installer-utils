@@ -34,7 +34,7 @@ func (u *UI) createTimeoutModal(config checks.Config) {
 				u.app.Stop()
 			}
 		}).
-		SetBackgroundColor(newt.ColorBlack)
+		SetBackgroundColor(newt.ColorGray)
 	u.timeoutModal.
 		SetBorderColor(newt.ColorBlack).
 		SetBorder(true)
