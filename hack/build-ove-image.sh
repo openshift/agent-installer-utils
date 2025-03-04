@@ -60,14 +60,14 @@ function validate_inputs() {
 function clone_appliance_repo() {
     local repo_url="https://github.com/danielerez/appliance.git"
     local branch_name="live_iso"
-    local clone_dir="./appliance"
+    CLONE_DIR="./appliance"
 
-    if [[ ! -d "$clone_dir" ]]; then 
+    if [[ ! -d "$CLONE_DIR" ]]; then 
         echo "Cloning repository from $repo_url (branch: $branch_name)..."
-        git clone --branch "$branch_name" "$repo_url" "$clone_dir"
+        git clone --branch "$branch_name" "$repo_url" "$CLONE_DIR"
     else
-        echo "Repository already cloned in $clone_dir. Pulling latest changes..."
-        pushd "$clone_dir" || exit
+        echo "Repository already cloned in $CLONE_DIR. Pulling latest changes..."
+        pushd "$CLONE_DIR" || exit
         git fetch
         git checkout "$branch_name"
         git pull
@@ -130,7 +130,7 @@ function build_live_iso() {
     sudo podman run --rm -it --privileged --net=host -v "${TMP_APPLIANCE_DIR}"/:/assets:Z quay.io/edge-infrastructure/openshift-appliance:latest build live-iso
 }
 
-function prepare_agent_tui_artifacts() {
+function prepare_agent_artifacts() {
     if [ "${ARCH}" == "x86_64" ]; then
         OSARCH="amd64"
     else
@@ -155,14 +155,15 @@ function prepare_agent_tui_artifacts() {
     mksquashfs "${ARTIFACTS_DIR}" "${SQUASH_FILE}" -comp xz -b 1M -Xdict-size 512K
 }
 
-function extract_iso_and_copy_agent_tui_artifacts() {
+function extract_iso() {
     echo "Extracting ISO contents..."
     mkdir -p "${READ_DIR}" "${WORK_DIR}"
     mount -o loop "${APPLIANCE_ISO_PATH}" "${READ_DIR}"
     # Copy ISO contents to a writable directory
     rsync -av "${READ_DIR}"/ "${WORK_DIR}"/
-    umount "${READ_DIR}"
+}
 
+function copy_agent_artifacts() {
     # Copy the squashed agent artifacts to the ISO
     AGENT_ARTIFACTS_DIR="${WORK_DIR}"/agent-artifacts
     mkdir -p "${AGENT_ARTIFACTS_DIR}"
@@ -172,6 +173,11 @@ function extract_iso_and_copy_agent_tui_artifacts() {
     AGENT_SCRIPTS_DIR="${WORK_DIR}"/usr/local/bin
     mkdir -p "${AGENT_SCRIPTS_DIR}"
     cp data/ove/data/files/usr/local/bin/setup-agent-tui.sh "${AGENT_ARTIFACTS_DIR}"/setup-agent-tui.sh
+
+    # Copy assisted-installer-ui image to /images dir
+    IMAGE_DIR="$WORK_DIR/images/$IMAGE"
+    mkdir -p $IMAGE_DIR
+    skopeo copy -q --authfile=$PULL_SECRET docker://$PULL_SPEC oci-archive:$IMAGE_DIR/$IMAGE.tar
 }
 
 function rebuild_iso() {
@@ -214,8 +220,12 @@ EOF
 }
 
 function cleanup() {
+    rm -rf "${CLONE_DIR}"
+    umount "${READ_DIR}"
     rm -rf "${READ_DIR}"
     rm -rf "${WORK_DIR}"
+    rm -rf /mnt/appliance
+    rm -rf /mnt/ove
     rm -rf "${TMP_APPLIANCE_DIR}"
 }
 
@@ -240,15 +250,19 @@ function main()
     UPDATED_IGNITION="${TMP_APPLIANCE_DIR}"/updated_ignition.ign
 
     READ_DIR="/mnt/appliance/iso"              
-    WORK_DIR="/mnt/ove/iso"                                
+    WORK_DIR="/mnt/ove/iso"
+
+    IMAGE=assisted-install-ui
+    PULL_SPEC=registry.ci.openshift.org/ocp/4.19:assisted-install-ui                               
 
     clone_appliance_repo
     build_appliance
     create_appliance_config "$VERSION" "$ARCH" "$PULL_SECRET" "$SSH_KEY"
     build_live_iso
 
-    prepare_agent_tui_artifacts
-    extract_iso_and_copy_agent_tui_artifacts
+    prepare_agent_artifacts
+    extract_iso
+    copy_agent_artifacts
 
     rebuild_iso
 
