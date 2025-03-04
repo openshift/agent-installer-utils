@@ -11,13 +11,12 @@ function usage() {
     echo "If the 'ove-assets' directory doesn't exist, it will be created at the current location."
     echo
     echo "Usage:"
-    echo "$0 --version <openshift-release> --arch <architecture> --pull-secret <pull-secret> --ip [rendezvousIP] --ssh-key [sshKey] --operators [operators]"
+    echo "$0 --version <openshift-release> --arch <architecture> --pull-secret <pull-secret> --rendezvousIP [rendezvousIP] --ssh-key [sshKey]"
     echo
     echo "Examples:"
     echo "$0 --version registry.ci.openshift.org/ocp/release:4.19.0-0.ci-2025-02-26-035445 --arch x86_64 --pull-secret ~/pull_secret.json"
-    echo "$0 --version 4.18.0-rc.5 --arch x86_64 --pull-secret ~/pull_secret.json --ip 192.168.122.2"
-    echo "$0 --version 4.18.0-rc.5 --arch x86_64 --pull-secret ~/pull_secret.json --ssh-key ~/.ssh/idrsa.pub"
-    echo "$0 --version 4.18.0-rc.5 --arch x86_64 --pull-secret ~/pull_secret.json --operators operator1,operator2"
+    echo "$0 --version registry.ci.openshift.org/ocp/release:4.19.0-0.ci-2025-02-26-035445 --arch x86_64 --pull-secret ~/pull_secret.json --rendezvousIP 192.168.122.2"
+    echo "$0 --version registry.ci.openshift.org/ocp/release:4.19.0-0.ci-2025-02-26-035445 --arch x86_64 --pull-secret ~/pull_secret.json --ssh-key ~/.ssh/idrsa.pub"
     echo
     echo "Outputs:"
     echo "  - agent-ove-x86_64.iso: Bootable agent OVE ISO image."
@@ -35,9 +34,8 @@ function parse_inputs() {
             --version) VERSION="$2"; shift ;;
             --arch) ARCH="$2"; shift ;;
             --pull-secret) PULL_SECRET="$2"; shift ;;
-            --ip) RENDEZVOUS_IP="$2"; shift ;;
+            --rendezvousIP) RENDEZVOUS_IP="$2"; shift ;;
             --ssh-key) SSH_KEY="$2"; shift ;;
-            --operators) OPERATORS="$2"; shift ;;
             *) echo "Unknown parameter: $1"; exit 1 ;;
         esac
         shift
@@ -53,32 +51,6 @@ function validate_inputs() {
         echo "File $PULL_SECRET does not exist." >&2
         exit 1
     fi
-}
-
-# ToDo: Once appliance PR https://github.com/openshift/appliance/pull/335 is merged, change this
-# to checkout from the main branch
-function clone_appliance_repo() {
-    local repo_url="https://github.com/danielerez/appliance.git"
-    local branch_name="live_iso"
-    CLONE_DIR="./appliance"
-
-    if [[ ! -d "$CLONE_DIR" ]]; then 
-        echo "Cloning repository from $repo_url (branch: $branch_name)..."
-        git clone --branch "$branch_name" "$repo_url" "$CLONE_DIR"
-    else
-        echo "Repository already cloned in $CLONE_DIR. Pulling latest changes..."
-        pushd "$CLONE_DIR" || exit
-        git fetch
-        git checkout "$branch_name"
-        git pull
-        popd
-    fi
-}
-
-function build_appliance() {
-    pushd appliance
-    make build
-    popd
 }
 
 function keygen()
@@ -220,7 +192,6 @@ EOF
 }
 
 function cleanup() {
-    rm -rf "${CLONE_DIR}"
     umount "${READ_DIR}"
     rm -rf "${READ_DIR}"
     rm -rf "${WORK_DIR}"
@@ -233,7 +204,6 @@ function main()
 {
     RENDEZVOUS_IP=""
     SSH_KEY=""
-    OPERATORS=""
 
     parse_inputs "$@"
     validate_inputs
@@ -255,8 +225,6 @@ function main()
     IMAGE=assisted-install-ui
     PULL_SPEC=registry.ci.openshift.org/ocp/4.19:assisted-install-ui                               
 
-    clone_appliance_repo
-    build_appliance
     create_appliance_config "$VERSION" "$ARCH" "$PULL_SECRET" "$SSH_KEY"
     build_live_iso
 
