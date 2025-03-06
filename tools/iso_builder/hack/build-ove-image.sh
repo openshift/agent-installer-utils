@@ -11,11 +11,11 @@ function usage() {
     echo "If the 'ove-assets' directory doesn't exist, it will be created at the current location."
     echo
     echo "Usage:"
-    echo "$0 --version <openshift-release> --arch <architecture> --pull-secret <pull-secret> --rendezvousIP [rendezvousIP]"
+    echo "$0 --release-image <openshift-release> --arch <architecture> --pull-secret <pull-secret> --rendezvousIP [rendezvousIP]"
     echo
     echo "Examples:"
-    echo "$0 --version registry.ci.openshift.org/ocp/release:4.19.0-0.ci-2025-02-26-035445 --arch x86_64 --pull-secret ~/pull_secret.json"
-    echo "$0 --version registry.ci.openshift.org/ocp/release:4.19.0-0.ci-2025-02-26-035445 --arch x86_64 --pull-secret ~/pull_secret.json --rendezvousIP 192.168.122.2"
+    echo "$0 --release-image registry.ci.openshift.org/ocp/release:4.19.0-0.ci-2025-02-26-035445 --arch x86_64 --pull-secret ~/pull_secret.json"
+    echo "$0 --release-image registry.ci.openshift.org/ocp/release:4.19.0-0.ci-2025-02-26-035445 --arch x86_64 --pull-secret ~/pull_secret.json --rendezvousIP 192.168.122.2"
     echo
     echo "Outputs:"
     echo "  - agent-ove-x86_64.iso: Bootable agent OVE ISO image."
@@ -30,7 +30,7 @@ function usage() {
 function parse_inputs() {
     while [[ "$#" -gt 0 ]]; do
         case $1 in
-            --version) RELEASE_VERSION="$2"; shift ;;
+            --release-image) RELEASE_VERSION="$2"; shift ;;
             --arch) ARCH="$2"; shift ;;
             --pull-secret) PULL_SECRET="$2"; shift ;;
             --rendezvousIP) RENDEZVOUS_IP="$2"; shift ;;
@@ -54,7 +54,7 @@ function validate_inputs() {
 function create_appliance_config() {
     echo "Creating appliance config..."
     local RELEASE_VERSION=$1
-    local OCP_VERSION=$(echo $RELEASE_VERSION | awk -F ':' '{print $2}')
+    local OCP_VERSION=$(echo $RELEASE_VERSION | awk -F ':' '{print $2}' | awk -F'-' '{print $1}')
     local ARCH=$2
     local PULLSECRET=$3
 
@@ -75,7 +75,7 @@ userCorePass: core
 stopLocalRegistry: false
 enableDefaultSources: false
 operators:
-  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.12
+  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
     packages:
       - name: mtv-operator
 EOF
@@ -156,7 +156,7 @@ function setup_agent_artifacts() {
 }
 
 function create_ove_iso() {
-    OUTPUT_DIR="$(pwd)/ove-assets"
+    OUTPUT_DIR="../ove-assets"
     mkdir -p "${OUTPUT_DIR}"
     AGENT_OVE_ISO="${OUTPUT_DIR}"/agent-ove-"${ARCH}".iso
 
