@@ -11,6 +11,10 @@ import (
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/ui"
 )
 
+const (
+	RENDEZVOUS_IP_TEMPLATE_VALUE = "{{.RendezvousIP}}"
+)
+
 func main() {
 	releaseImage := os.Getenv("RELEASE_IMAGE")
 	logPath := os.Getenv("AGENT_TUI_LOG_PATH")
@@ -46,6 +50,9 @@ func getRendezvousIP() string {
 			return ""
 		}
 		nodeZeroIP = envMap["NODE_ZERO_IP"]
+		if nodeZeroIP == RENDEZVOUS_IP_TEMPLATE_VALUE {
+			return ""
+		}
 	}
 
 	return nodeZeroIP

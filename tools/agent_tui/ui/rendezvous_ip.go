@@ -3,8 +3,6 @@ package ui
 import (
 	"fmt"
 	"net"
-	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
@@ -135,41 +133,4 @@ func (u *UI) hostIPAddresses() []string {
 	u.logger.Infof("current host IPv4 addresses: %v", ipv4)
 	u.logger.Infof("current host IPv6 addresses: %v", ipv6)
 	return append(ipv4, ipv6...)
-}
-
-func saveRendezvousIPAddress(ipAddress string) error {
-	_, err := os.Stat(RENDEZVOUS_HOST_ENV_PATH)
-	if os.IsNotExist(err) {
-		// TODO: Should we not expect RENDEZVOUS_HOST_ENV_PATH to always exist?
-		// If so, this block can be removed.
-		file, err := os.OpenFile(RENDEZVOUS_HOST_ENV_PATH, os.O_WRONLY|os.O_CREATE, 0644)
-		if err != nil {
-			return fmt.Errorf("could not create and/or write to %s", RENDEZVOUS_HOST_ENV_PATH)
-		}
-		defer file.Close()
-
-		_, err = file.WriteString(fmt.Sprintf("NODE_ZERO_IP=%s\nSERVICE_BASE_URL=http://%s:8090/\nIMAGE_SERVICE_BASE_URL=http://%s:8888/\n", ipAddress, ipAddress, ipAddress))
-		if err != nil {
-			return fmt.Errorf("error writing NODE_ZERO_IP to %s", RENDEZVOUS_HOST_ENV_PATH)
-		}
-	} else {
-		cmd := exec.Command("sed", "-i", fmt.Sprintf("s/^NODE_ZERO_IP=.*/NODE_ZERO_IP=%s/", ipAddress), RENDEZVOUS_HOST_ENV_PATH)
-		output, err := cmd.CombinedOutput()
-		if err != nil {
-			return fmt.Errorf("NODE_ZERO_IP update failed: %v out: %v", err, string(output))
-		}
-
-		cmd = exec.Command("sed", "-i", fmt.Sprintf("s/^SERVICE_BASE_URL=.*/SERVICE_BASE_URL=http:\\/\\/%s:8090\\//", ipAddress), RENDEZVOUS_HOST_ENV_PATH)
-		output, err = cmd.CombinedOutput()
-		if err != nil {
-			return fmt.Errorf("SERVICE_BASE_URL update failed: %v out: %v", err, string(output))
-		}
-
-		cmd = exec.Command("sed", "-i", fmt.Sprintf("s/^IMAGE_SERVICE_BASE_URL=.*/IMAGE_SERVICE_BASE_URL=http:\\/\\/%s:8888\\//", ipAddress), RENDEZVOUS_HOST_ENV_PATH)
-		output, err = cmd.CombinedOutput()
-		if err != nil {
-			return fmt.Errorf("IMAGE_SERVICE_BASE_URL update failed: %v out: %v", err, string(output))
-		}
-	}
-	return nil
 }
