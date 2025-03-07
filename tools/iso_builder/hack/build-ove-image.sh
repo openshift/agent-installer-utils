@@ -58,7 +58,6 @@ function create_appliance_config() {
     local ARCH=$2
     local PULLSECRET=$3
 
-# ToDo: Add enableInteractiveFlow: true
 # ToDo: Add rendezvousIp: user_specified_rendezvous_ip_address
   cat >"${WORK_DIR}/appliance-config.yaml" <<EOF
 apiVersion: v1beta1
@@ -74,6 +73,7 @@ imageRegistry:
 userCorePass: core
 stopLocalRegistry: false
 enableDefaultSources: false
+enableInteractiveFlow: true
 operators:
   - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
     packages:
