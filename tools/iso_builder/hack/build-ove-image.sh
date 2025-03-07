@@ -83,8 +83,8 @@ EOF
 
 function build_live_iso() {
     echo "Building appliance ISO..."
-    PULL_SPEC=quay.io/edge-infrastructure/openshift-appliance:latest
-    sudo podman run --rm -it --privileged --net=host -v "${WORK_DIR}"/:/assets:Z  "${PULL_SPEC}" build live-iso
+    local PULL_SPEC=quay.io/edge-infrastructure/openshift-appliance:latest
+    sudo podman run --rm -it --privileged --pull always --net=host -v "${WORK_DIR}"/:/assets:Z  "${PULL_SPEC}" build live-iso
     # Cleanup unwanted files and directories created by appliance
     for item in "${WORK_DIR}"/{.,}*; do
         if [[ $(basename "$item") != "appliance.iso" && $(basename "$item") != "." && $(basename "$item") != ".." ]]; then
@@ -96,7 +96,7 @@ function build_live_iso() {
 function extract_live_iso() {
     echo "Extracting ISO contents..."
 
-    READ_DIR="/tmp/appliance"
+    local READ_DIR="/tmp/appliance"
     mkdir -p "${READ_DIR}"
 
     # Mount the ISO
@@ -116,18 +116,19 @@ function extract_live_iso() {
 
 function setup_agent_artifacts() {
     echo "Preparing agent TUI artifacts..."
+    local OSARCH
     if [ "${ARCH}" == "x86_64" ]; then
         OSARCH="amd64"
     else
         OSARCH="${ARCH}"
     fi
 
-    ARTIFACTS_DIR="${WORK_DIR}"/agent-artifacts
+    local ARTIFACTS_DIR="${WORK_DIR}"/agent-artifacts
     mkdir -p "${ARTIFACTS_DIR}"
 
-    IMAGE_PULL_SPEC=$(oc adm release info --image-for=agent-installer-utils --filter-by-os=linux/"${OSARCH}" --insecure=true "${RELEASE_VERSION}")
+    local IMAGE_PULL_SPEC=$(oc adm release info --image-for=agent-installer-utils --filter-by-os=linux/"${OSARCH}" --insecure=true "${RELEASE_VERSION}")
     
-    FILES=("/usr/bin/agent-tui" "/usr/lib64/libnmstate.so.*")
+    local FILES=("/usr/bin/agent-tui" "/usr/lib64/libnmstate.so.*")
     for FILE in "${FILES[@]}"; do
         echo "Extracting $FILE"
         oc image extract --path="$FILE:${ARTIFACTS_DIR}" --filter-by-os=linux/$OSARCH --insecure=true --confirm "${IMAGE_PULL_SPEC}"
@@ -144,23 +145,29 @@ function setup_agent_artifacts() {
     mv "${SQUASH_FILE}" "${ARTIFACTS_DIR}"
 
     # copy the custom script for systemd
-    cp data/ove/data/files/usr/local/bin/setup-agent-tui.sh "${ARTIFACTS_DIR}"/setup-agent-tui.sh
+    cp tools/iso_builder/data/ove/data/files/usr/local/bin/setup-agent-tui.sh "${ARTIFACTS_DIR}"/setup-agent-tui.sh
 
     # Copy assisted-installer-ui image to /images dir
-    IMAGE=assisted-install-ui
-    PULL_SPEC=registry.ci.openshift.org/ocp/4.19:"${IMAGE}"
-    IMAGE_DIR="${WORK_DIR}"/images/"${IMAGE}"
+    local IMAGE=assisted-install-ui
+    local PULL_SPEC=registry.ci.openshift.org/ocp/4.19:"${IMAGE}"
+    local IMAGE_DIR="${WORK_DIR}"/images/"${IMAGE}"
     mkdir -p "${IMAGE_DIR}"
     
     skopeo copy -q --authfile="${PULL_SECRET}" docker://"${PULL_SPEC}" oci-archive:"${IMAGE_DIR}"/"${IMAGE}".tar
 }
 
 function create_ove_iso() {
-    OUTPUT_DIR="../ove-assets"
+    local OUTPUT_DIR="../ove-assets"
     mkdir -p "${OUTPUT_DIR}"
     AGENT_OVE_ISO="${OUTPUT_DIR}"/agent-ove-"${ARCH}".iso
 
     echo "Creating ${AGENT_OVE_ISO}..."
+    local BOOT_IMAGE="${WORK_DIR}/images/efiboot.img"
+    local SIZE=$(stat --format="%s" "${BOOT_IMAGE}")
+    # Calculate the number of 2048-byte sectors needed for the file
+    # Add 2047 to round up any remaining bytes to a full sector
+    local BOOT_LOAD_SIZE=$(( ("${SIZE}" + 2047) / 2048 ))
+
     xorriso -as mkisofs \
         -o "${AGENT_OVE_ISO}" \
         -J -R -V "${VOLUME_LABEL}" \
@@ -169,28 +176,28 @@ function create_ove_iso() {
         -no-emul-boot -boot-load-size 4 -boot-info-table \
         -eltorito-alt-boot \
         -e images/efiboot.img \
-        -no-emul-boot -boot-load-size 2489 \
+        -no-emul-boot -boot-load-size "${BOOT_LOAD_SIZE}" \
         "${WORK_DIR}"
 }
 
 function update_ignition() {
     echo "Extracing ignition..."
-    OG_IGNITION="${WORK_DIR}"/og_ignition.ign
+    local OG_IGNITION="${WORK_DIR}"/og_ignition.ign
     
     coreos-installer iso ignition show "${AGENT_OVE_ISO}" | jq . >> "${OG_IGNITION}"
 
     echo "Updating ignition..."
 
-    NEW_UNIT=$(cat <<EOF
+    local NEW_UNIT=$(cat <<EOF
 {
-    "contents": $(cat data/ove/data/systemd/agent-setup-tui.service | sed -z 's/\n$//' | jq -Rs .),
+    "contents": $(cat tools/iso_builder/data/ove/data/systemd/agent-setup-tui.service | sed -z 's/\n$//' | jq -Rs .),
     "name": "agent-setup-tui.service",
     "enabled": true
 }
 EOF
 )
 
-    UPDATED_IGNITION="${WORK_DIR}"/updated_ignition.ign
+    local UPDATED_IGNITION="${WORK_DIR}"/updated_ignition.ign
     jq ".systemd.units += [$NEW_UNIT]" "${OG_IGNITION}" > "${UPDATED_IGNITION}"
 
     echo "Embedding updated ignition into ISO..."
