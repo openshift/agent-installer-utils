@@ -116,6 +116,7 @@ function extract_live_iso() {
 
 function setup_agent_artifacts() {
     echo "Preparing agent TUI artifacts..."
+    local PULL_SECRET=$1
     local OSARCH
     if [ "${ARCH}" == "x86_64" ]; then
         OSARCH="amd64"
@@ -131,7 +132,7 @@ function setup_agent_artifacts() {
     local FILES=("/usr/bin/agent-tui" "/usr/lib64/libnmstate.so.*")
     for FILE in "${FILES[@]}"; do
         echo "Extracting $FILE"
-        oc image extract --path="$FILE:${ARTIFACTS_DIR}" --filter-by-os=linux/$OSARCH --insecure=true --confirm "${IMAGE_PULL_SPEC}"
+        oc image extract --path="${FILE}:${ARTIFACTS_DIR}" --registry-config="${PULL_SECRET}" --filter-by-os=linux/"${OSARCH}" --insecure=true --confirm "${IMAGE_PULL_SPEC}"
     done
 
     # Make sure files could be executed
@@ -157,7 +158,7 @@ function setup_agent_artifacts() {
 }
 
 function create_ove_iso() {
-    local OUTPUT_DIR="../ove-assets"
+    local OUTPUT_DIR="./ove-assets"
     mkdir -p "${OUTPUT_DIR}"
     AGENT_OVE_ISO="${OUTPUT_DIR}"/agent-ove-"${ARCH}".iso
 
@@ -220,10 +221,10 @@ function main()
     APPLIANCE_ISO="${WORK_DIR}"/appliance.iso
     SQUASH_FILE="${WORK_DIR}"/agent-artifacts.squashfs
 
-    create_appliance_config "$RELEASE_VERSION" "$ARCH" "$PULL_SECRET"
+    create_appliance_config "${RELEASE_VERSION}" "${ARCH}" "${PULL_SECRET}"
     build_live_iso
     extract_live_iso
-    setup_agent_artifacts
+    setup_agent_artifacts "${PULL_SECRET}"
     create_ove_iso
     update_ignition
     cleanup
@@ -231,5 +232,5 @@ function main()
     echo "Generated agent based installer OVE ISO at: $AGENT_OVE_ISO"
 }
 
-[[ $# -lt 1 ]] && usage
+[[ $# -lt 3 ]] && usage
 main "$@"
