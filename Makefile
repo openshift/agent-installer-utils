@@ -5,8 +5,6 @@ BUILD_VERSION ?= $(shell git describe --always --abbrev=40 --dirty)
 VERSION_URI ?= github.com/openshift/agent-installer-utils/pkg/version
 RELEASE_IMAGE ?= quay.io/openshift-release-dev/ocp-release:4.18.4-x86_64
 ARCH ?= x86_64
-PULL_SECRET ?= /home/test/dev-scripts/pull_secret.json
-
 
 .PHONY:clean
 clean:
@@ -29,4 +27,7 @@ run: build
 
 .PHONY: build-ove-iso
 build-ove-iso: clean
-	tools/iso_builder/hack/build-ove-image.sh --release-image ${RELEASE_IMAGE} --arch ${ARCH} --pull-secret ${PULL_SECRET}
+	OCP_RELEASE_IMAGE=${OCP_RELEASE_IMAGE} \
+	PULL_SECRET=${PULL_SECRET} \
+	ARCH=${ARCH} \
+	tools/iso_builder/hack/build-ove-image.sh --release-image ${OCP_RELEASE_IMAGE} --arch ${ARCH} --pull-secret ${PULL_SECRET}
