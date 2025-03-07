@@ -64,7 +64,7 @@ func NewAppTester(t *testing.T, debug ...bool) *AppTester {
 
 // Starts a new Agent TUI in background
 func (a *AppTester) Start(config checks.Config) *AppTester {
-	go App(a.app, config, checks.CheckFunctions{
+	go App(a.app, "192.168.111.80", config, checks.CheckFunctions{
 		checks.CheckTypeReleaseImageHostDNS:  a.wrapper,
 		checks.CheckTypeReleaseImageHostPing: a.wrapper,
 		checks.CheckTypeReleaseImageHttp:     a.wrapper,

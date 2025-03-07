@@ -76,7 +76,7 @@ func (u *UI) TreeView(netState net.NetState) (*tview.TreeView, error) {
 		SetCurrentNode(root).SetDoneFunc(
 		func(key tcell.Key) {
 			u.pages.RemovePage("netstate")
-			u.returnFocusToChecks()
+			u.setFocusToChecks()
 		})
 
 	tree.SetTitle("Network Status").
@@ -89,7 +89,7 @@ func (u *UI) TreeView(netState net.NetState) (*tview.TreeView, error) {
 		func(event *tcell.EventKey) *tcell.EventKey {
 			if event.Rune() == 'q' {
 				u.pages.RemovePage("netstate")
-				u.returnFocusToChecks()
+				u.setFocusToChecks()
 			}
 			return event
 		})

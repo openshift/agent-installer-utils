@@ -81,5 +81,5 @@ func (u *UI) ShowTimeoutDialog() {
 func (u *UI) cancelUserPrompt() {
 	u.timeoutDialogCancel <- true
 	u.setIsTimeoutDialogActive(false)
-	u.returnFocusToChecks()
+	u.setFocusToChecks()
 }

@@ -1,14 +1,10 @@
 package checks
 
 import (
-	"errors"
-	"fmt"
 	"net/http"
-	"os"
 	"os/exec"
 	"time"
 
-	"github.com/openshift/agent-installer-utils/pkg/version"
 	"github.com/sirupsen/logrus"
 )
 
@@ -92,21 +88,8 @@ var defaultCheckFunctions = CheckFunctions{
 	},
 }
 
-func NewEngine(c chan CheckResult, config Config, checkFuncs ...CheckFunctions) *Engine {
+func NewEngine(c chan CheckResult, config Config, logger *logrus.Logger, checkFuncs ...CheckFunctions) *Engine {
 	checks := []*Check{}
-	logger := logrus.New()
-
-	// initialize log
-	f, err := os.OpenFile(config.LogPath, os.O_RDWR|os.O_CREATE, 0644)
-	if errors.Is(err, os.ErrNotExist) {
-		// handle the case where the file doesn't exist
-		fmt.Printf("Error creating log file %s\n", config.LogPath)
-	}
-	logger.Out = f
-
-	logger.Infof("Release Image URL: %s", config.ReleaseImageURL)
-	logger.Infof("Agent TUI git version: %s", version.Commit)
-	logger.Infof("Agent TUI build version: %s", version.Raw)
 
 	cf := defaultCheckFunctions
 	if len(checkFuncs) > 0 {
