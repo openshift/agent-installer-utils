@@ -11,11 +11,11 @@ import (
 )
 
 const (
-	CONFIGURE_NETWORK_LABEL   string = "Configure Networking"
-	RELEASE_IMAGE_LABEL       string = "Release Image"
-	CONFIGURE_BUTTON          string = "<Configure network>"
-	QUIT_BUTTON               string = "<Quit>"
-	PAGE_CHECKSCREEN          string = "checkScreen"
+	CONFIGURE_NETWORK_LABEL string = "Configure Networking"
+	RELEASE_IMAGE_LABEL     string = "Release Image"
+	CONFIGURE_BUTTON        string = "<Configure network>"
+	QUIT_BUTTON             string = "<Quit>"
+	PAGE_CHECKSCREEN        string = "checkScreen"
 
 	mainFlexHeight            = 10
 	mainFlexWithDetailsHeight = 30
