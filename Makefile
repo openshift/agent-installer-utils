@@ -9,7 +9,6 @@ ARCH ?= x86_64
 .PHONY:clean
 clean:
 	rm -rf bin/
-	rm -rf /tmp/appliance/
 	rm -rf /tmp/ove/
 	rm -rf ove-assets/
 

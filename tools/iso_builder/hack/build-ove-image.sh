@@ -58,9 +58,12 @@ function create_appliance_config() {
     local ARCH=$2
     local PULLSECRET=$3
 
+    APPLIANCE_WORK_DIR="/tmp/appliance-assets"
+    mkdir -p "${APPLIANCE_WORK_DIR}"
+
 # ToDo: Add enableInteractiveFlow: true
 # ToDo: Add rendezvousIp: user_specified_rendezvous_ip_address
-  cat >"${WORK_DIR}/appliance-config.yaml" <<EOF
+  cat >"${APPLIANCE_WORK_DIR}/appliance-config.yaml" <<EOF
 apiVersion: v1beta1
 kind: ApplianceConfig
 ocpRelease:
@@ -84,13 +87,7 @@ EOF
 function build_live_iso() {
     echo "Building appliance ISO..."
     local PULL_SPEC=quay.io/edge-infrastructure/openshift-appliance:latest
-    sudo podman run --rm -it --privileged --pull always --net=host -v "${WORK_DIR}"/:/assets:Z  "${PULL_SPEC}" build live-iso
-    # Cleanup unwanted files and directories created by appliance
-    for item in "${WORK_DIR}"/{.,}*; do
-        if [[ $(basename "$item") != "appliance.iso" && $(basename "$item") != "." && $(basename "$item") != ".." ]]; then
-            rm -rf "$item"
-        fi
-    done
+    sudo podman run --rm -it --privileged --pull always --net=host -v "${APPLIANCE_WORK_DIR}"/:/assets:Z  "${PULL_SPEC}" build live-iso
 }
 
 function extract_live_iso() {
@@ -100,18 +97,17 @@ function extract_live_iso() {
     mkdir -p "${READ_DIR}"
 
     # Mount the ISO
-    mount -o loop "${APPLIANCE_ISO}" "${READ_DIR}"
-    VOLUME_LABEL=$(isoinfo -d -i "${APPLIANCE_ISO}" | grep "Volume id:" | cut -d' ' -f3-)
+    mount -o loop "${APPLIANCE_WORK_DIR}"/appliance.iso "${READ_DIR}"
+    VOLUME_LABEL=$(isoinfo -d -i "${APPLIANCE_WORK_DIR}"/appliance.iso | grep "Volume id:" | cut -d' ' -f3-)
 
-    # Copy ISO contents to a writable directory
+    echo "Copy appliance ISO contents to a writable directory: $WORK_DIR"
+
     rsync -aH --info=progress2 "${READ_DIR}/" "${WORK_DIR}/"
 
     # Cleanup
     umount "${READ_DIR}"
     rm -rf "${READ_DIR}"
 
-    # Cleanup as appliance.iso is unpacked into a writable directory
-    rm -rf "${APPLIANCE_ISO}"
 }
 
 function setup_agent_artifacts() {
@@ -131,7 +127,7 @@ function setup_agent_artifacts() {
     
     local FILES=("/usr/bin/agent-tui" "/usr/lib64/libnmstate.so.*")
     for FILE in "${FILES[@]}"; do
-        echo "Extracting $FILE"
+        echo "Extracting $FILE..."
         oc image extract --path="${FILE}:${ARTIFACTS_DIR}" --registry-config="${PULL_SECRET}" --filter-by-os=linux/"${OSARCH}" --insecure=true --confirm "${IMAGE_PULL_SPEC}"
     done
 
@@ -139,11 +135,11 @@ function setup_agent_artifacts() {
     chmod -R 555 "${ARTIFACTS_DIR}"
 
     # Squash the directory to save space
-    mksquashfs "${ARTIFACTS_DIR}" "${SQUASH_FILE}" -comp xz -b 1M -Xdict-size 512K
+    mksquashfs "${ARTIFACTS_DIR}" "${WORK_DIR}"/agent-artifacts.squashfs -comp xz -b 1M -Xdict-size 512K
 
     # Cleanup directory and save only one archieved file
     rm -rf "${ARTIFACTS_DIR}"/*
-    mv "${SQUASH_FILE}" "${ARTIFACTS_DIR}"
+    mv "${WORK_DIR}"/agent-artifacts.squashfs "${ARTIFACTS_DIR}"
 
     # copy the custom script for systemd
     cp tools/iso_builder/data/ove/data/files/usr/local/bin/setup-agent-tui.sh "${ARTIFACTS_DIR}"/setup-agent-tui.sh
@@ -218,8 +214,6 @@ function main()
 
     WORK_DIR="/tmp/ove/iso"
     mkdir -p "${WORK_DIR}"
-    APPLIANCE_ISO="${WORK_DIR}"/appliance.iso
-    SQUASH_FILE="${WORK_DIR}"/agent-artifacts.squashfs
 
     create_appliance_config "${RELEASE_VERSION}" "${ARCH}" "${PULL_SECRET}"
     build_live_iso
