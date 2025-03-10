@@ -99,16 +99,17 @@ function extract_live_iso() {
     mkdir -p "${READ_DIR}"
 
     # Mount the ISO
-    mount -o loop "${APPLIANCE_WORK_DIR}"/appliance.iso "${READ_DIR}"
+    sudo mount -o loop "${APPLIANCE_WORK_DIR}"/appliance.iso "${READ_DIR}"
     VOLUME_LABEL=$(isoinfo -d -i "${APPLIANCE_WORK_DIR}"/appliance.iso | grep "Volume id:" | cut -d' ' -f3-)
 
-    echo "Copy appliance ISO contents to a writable directory: $WORK_DIR"
+    echo "Copying appliance ISO contents to a writable directory..."
+    sudo rsync -aH --info=progress2 "${READ_DIR}/" "${WORK_DIR}/"
 
-    rsync -aH --info=progress2 "${READ_DIR}/" "${WORK_DIR}/"
+    sudo chown -R $(whoami):$(whoami) "${WORK_DIR}/"
 
     # Cleanup
-    umount "${READ_DIR}"
-    rm -rf "${READ_DIR}"
+    sudo umount "${READ_DIR}"
+    sudo rm -rf "${READ_DIR}"
 
 }
 
@@ -125,7 +126,7 @@ function setup_agent_artifacts() {
     local ARTIFACTS_DIR="${WORK_DIR}"/agent-artifacts
     mkdir -p "${ARTIFACTS_DIR}"
 
-    local IMAGE_PULL_SPEC=$(oc adm release info --image-for=agent-installer-utils --filter-by-os=linux/"${OSARCH}" --insecure=true "${RELEASE_VERSION}")
+    local IMAGE_PULL_SPEC=$(oc adm release info --registry-config="${PULL_SECRET}" --image-for=agent-installer-utils --filter-by-os=linux/"${OSARCH}" --insecure=true "${RELEASE_VERSION}")
     
     local FILES=("/usr/bin/agent-tui" "/usr/lib64/libnmstate.so.*")
     for FILE in "${FILES[@]}"; do
@@ -140,11 +141,11 @@ function setup_agent_artifacts() {
     mksquashfs "${ARTIFACTS_DIR}" "${WORK_DIR}"/agent-artifacts.squashfs -comp xz -b 1M -Xdict-size 512K
 
     # Cleanup directory and save only one archieved file
-    rm -rf "${ARTIFACTS_DIR}"/*
-    mv "${WORK_DIR}"/agent-artifacts.squashfs "${ARTIFACTS_DIR}"
+    sudo rm -rf "${ARTIFACTS_DIR}"/*
+    sudo mv "${WORK_DIR}"/agent-artifacts.squashfs "${ARTIFACTS_DIR}"
 
     # copy the custom script for systemd
-    cp data/ove/data/files/usr/local/bin/setup-agent-tui.sh "${ARTIFACTS_DIR}"/setup-agent-tui.sh
+    sudo cp data/ove/data/files/usr/local/bin/setup-agent-tui.sh "${ARTIFACTS_DIR}"/setup-agent-tui.sh
 
     # Copy assisted-installer-ui image to /images dir
     local IMAGE=assisted-install-ui
@@ -204,7 +205,7 @@ EOF
 }
 
 function cleanup() {
-    rm -rf "${WORK_DIR}"
+    sudo rm -rf "${WORK_DIR}"
 }
 
 function main()
