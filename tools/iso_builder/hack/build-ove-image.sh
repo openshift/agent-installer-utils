@@ -9,13 +9,15 @@ function usage() {
     echo
     echo "This script generates 'agent-ove-<arch>.iso' in the 'ove-assets' directory."
     echo "If the 'ove-assets' directory doesn't exist, it will be created at the current location."
+    echo "The default architecture is x86_64."
     echo
     echo "Usage:"
     echo "$0 --release-image <openshift-release> --arch <architecture> --pull-secret <pull-secret> --rendezvousIP [rendezvousIP]"
     echo
     echo "Examples:"
     echo "$0 --release-image registry.ci.openshift.org/ocp/release:4.19.0-0.ci-2025-02-26-035445 --arch x86_64 --pull-secret ~/pull_secret.json"
-    echo "$0 --release-image registry.ci.openshift.org/ocp/release:4.19.0-0.ci-2025-02-26-035445 --arch x86_64 --pull-secret ~/pull_secret.json --rendezvousIP 192.168.122.2"
+    echo "$0 --release-image registry.ci.openshift.org/ocp/release:4.19.0-0.ci-2025-02-26-035445 --pull-secret ~/pull_secret.json"
+    echo "$0 --release-image registry.ci.openshift.org/ocp/release:4.19.0-0.ci-2025-02-26-035445 --pull-secret ~/pull_secret.json --rendezvousIP 192.168.122.2"
     echo
     echo "Outputs:"
     echo "  - agent-ove-x86_64.iso: Bootable agent OVE ISO image."
@@ -28,6 +30,7 @@ function usage() {
 }
 
 function parse_inputs() {
+    ARCH="x86_64"
     while [[ "$#" -gt 0 ]]; do
         case $1 in
             --release-image) RELEASE_VERSION="$2"; shift ;;
@@ -53,12 +56,11 @@ function validate_inputs() {
 
 function create_appliance_config() {
     echo "Creating appliance config..."
-    local RELEASE_VERSION=$1
-    local OCP_VERSION=$(echo $RELEASE_VERSION | awk -F ':' '{print $2}' | awk -F'-' '{print $1}')
+    local OCP_VERSION=$1
     local ARCH=$2
     local PULLSECRET=$3
 
-    APPLIANCE_WORK_DIR="/tmp/appliance-assets"
+    APPLIANCE_WORK_DIR="/tmp/appliance-assets-$OCP_VERSION"
     mkdir -p "${APPLIANCE_WORK_DIR}"
 
 # ToDo: Add enableInteractiveFlow: true
@@ -142,7 +144,7 @@ function setup_agent_artifacts() {
     mv "${WORK_DIR}"/agent-artifacts.squashfs "${ARTIFACTS_DIR}"
 
     # copy the custom script for systemd
-    cp tools/iso_builder/data/ove/data/files/usr/local/bin/setup-agent-tui.sh "${ARTIFACTS_DIR}"/setup-agent-tui.sh
+    cp data/ove/data/files/usr/local/bin/setup-agent-tui.sh "${ARTIFACTS_DIR}"/setup-agent-tui.sh
 
     # Copy assisted-installer-ui image to /images dir
     local IMAGE=assisted-install-ui
@@ -154,7 +156,7 @@ function setup_agent_artifacts() {
 }
 
 function create_ove_iso() {
-    local OUTPUT_DIR="./ove-assets"
+    local OUTPUT_DIR="$(pwd)/ove-assets"
     mkdir -p "${OUTPUT_DIR}"
     AGENT_OVE_ISO="${OUTPUT_DIR}"/agent-ove-"${ARCH}".iso
 
@@ -187,7 +189,7 @@ function update_ignition() {
 
     local NEW_UNIT=$(cat <<EOF
 {
-    "contents": $(cat tools/iso_builder/data/ove/data/systemd/agent-setup-tui.service | sed -z 's/\n$//' | jq -Rs .),
+    "contents": $(cat data/ove/data/systemd/agent-setup-tui.service | sed -z 's/\n$//' | jq -Rs .),
     "name": "agent-setup-tui.service",
     "enabled": true
 }
@@ -212,10 +214,11 @@ function main()
     parse_inputs "$@"
     validate_inputs
 
-    WORK_DIR="/tmp/ove/iso"
+    WORK_DIR="/tmp/ove-iso"
     mkdir -p "${WORK_DIR}"
 
-    create_appliance_config "${RELEASE_VERSION}" "${ARCH}" "${PULL_SECRET}"
+    OCP_VERSION=$(echo $RELEASE_VERSION | awk -F ':' '{print $2}' | awk -F'-' '{print $1}')
+    create_appliance_config "${OCP_VERSION}" "${ARCH}" "${PULL_SECRET}"
     build_live_iso
     extract_live_iso
     setup_agent_artifacts "${PULL_SECRET}"

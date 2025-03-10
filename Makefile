@@ -9,8 +9,6 @@ ARCH ?= x86_64
 .PHONY:clean
 clean:
 	rm -rf bin/
-	rm -rf /tmp/ove/
-	rm -rf ove-assets/
 
 .PHONY: lint
 lint:
@@ -23,10 +21,3 @@ build: clean lint
 .PHONY: run
 run: build
 	RELEASE_IMAGE=${RELEASE_IMAGE} SOURCE_GIT_COMMIT=${SOURCE_GIT_COMMIT} BUILD_VERSION=${BUILD_VERSION} ./bin/agent-tui
-
-.PHONY: build-ove-iso
-build-ove-iso: clean
-	OCP_RELEASE_IMAGE=${OCP_RELEASE_IMAGE} \
-	PULL_SECRET=${PULL_SECRET} \
-	ARCH=${ARCH} \
-	tools/iso_builder/hack/build-ove-image.sh --release-image ${OCP_RELEASE_IMAGE} --arch ${ARCH} --pull-secret ${PULL_SECRET}
