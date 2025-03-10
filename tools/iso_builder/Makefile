@@ -5,6 +5,9 @@ clean:
 	rm -rf /tmp/ove/
 	rm -rf ove-assets/
 
+cleanall: clean
+	rm -rf /tmp/appliance-assets*
+	
 .PHONY: build-ove-iso
 build-ove-iso:
 	OCP_RELEASE_IMAGE=${OCP_RELEASE_IMAGE} \
