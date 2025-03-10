@@ -60,7 +60,7 @@ function create_appliance_config() {
     local ARCH=$2
     local PULLSECRET=$3
 
-    APPLIANCE_WORK_DIR="/tmp/appliance-assets-$OCP_VERSION"
+    APPLIANCE_WORK_DIR="/tmp/iso_builder/appliance-assets-$OCP_VERSION"
     mkdir -p "${APPLIANCE_WORK_DIR}"
 
 # ToDo: Add enableInteractiveFlow: true
@@ -95,7 +95,7 @@ function build_live_iso() {
 function extract_live_iso() {
     echo "Extracting ISO contents..."
 
-    local READ_DIR="/tmp/appliance"
+    local READ_DIR="/tmp/iso_builder/appliance"
     mkdir -p "${READ_DIR}"
 
     # Mount the ISO
@@ -215,7 +215,7 @@ function main()
     parse_inputs "$@"
     validate_inputs
 
-    WORK_DIR="/tmp/ove-iso"
+    WORK_DIR="/tmp/iso_builder/ove-iso"
     mkdir -p "${WORK_DIR}"
 
     OCP_VERSION=$(echo $RELEASE_VERSION | awk -F ':' '{print $2}' | awk -F'-' '{print $1}')

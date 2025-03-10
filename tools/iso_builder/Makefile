@@ -2,11 +2,11 @@ ARCH ?= x86_64
 
 .PHONY:clean
 clean:
-	rm -rf /tmp/ove/
+	rm -rf /tmp/iso_builder/ove-iso
 	rm -rf ove-assets/
 
 cleanall: clean
-	rm -rf /tmp/appliance-assets*
+	sudo rm -rf /tmp/iso_builder
 	
 .PHONY: build-ove-iso
 build-ove-iso:
