@@ -42,17 +42,13 @@ func main() {
 // then this function reads /etc/assisted/rendezvous-host.env
 // for the value..
 func getRendezvousIP() string {
-	nodeZeroIP := os.Getenv("NODE_ZERO_IP")
-
-	if nodeZeroIP == "" {
-		envMap, err := godotenv.Read(ui.RENDEZVOUS_HOST_ENV_PATH)
-		if err != nil {
-			return ""
-		}
-		nodeZeroIP = envMap["NODE_ZERO_IP"]
-		if nodeZeroIP == RENDEZVOUS_IP_TEMPLATE_VALUE {
-			return ""
-		}
+	envMap, err := godotenv.Read(ui.RENDEZVOUS_HOST_ENV_PATH)
+	if err != nil {
+		return ""
+	}
+	nodeZeroIP := envMap["NODE_ZERO_IP"]
+	if nodeZeroIP == RENDEZVOUS_IP_TEMPLATE_VALUE {
+		return ""
 	}
 
 	return nodeZeroIP
