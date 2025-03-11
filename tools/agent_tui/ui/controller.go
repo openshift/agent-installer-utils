@@ -9,8 +9,9 @@ type Controller struct {
 	ui      *UI
 	channel chan checks.CheckResult
 
-	checks map[string]checks.CheckResult
-	state  bool
+	checks          map[string]checks.CheckResult
+	state           bool
+	rendezvousIPSet bool
 }
 
 func NewController(ui *UI) *Controller {
@@ -39,9 +40,14 @@ func (c *Controller) receivedPrimaryCheck(numChecks int) bool {
 	return found
 }
 
-func (c *Controller) Init(numChecks int) {
-
+func (c *Controller) Init(numChecks int, rendezvousIP string) {
 	c.ui.ShowSplashScreen()
+
+	if rendezvousIP == "" {
+		c.ui.setFocusToRendezvousIP()
+	} else {
+		c.ui.setFocusToChecks()
+	}
 
 	go func() {
 		for {
@@ -60,6 +66,12 @@ func (c *Controller) Init(numChecks int) {
 				continue
 			}
 
+			// Checks are suspended if rendezvous IP form
+			// is active
+			if c.ui.IsRendezvousIPFormActive() {
+				continue
+			}
+
 			// Pull check is always updated
 			if res.Type == checks.CheckTypeReleaseImagePull {
 				c.ui.SetPullCheck(res)
@@ -73,7 +85,7 @@ func (c *Controller) Init(numChecks int) {
 					if c.state {
 						c.ui.ShowTimeoutDialog()
 					} else {
-						c.ui.returnFocusToChecks()
+						c.ui.setFocusToChecks()
 					}
 				})
 				continue
