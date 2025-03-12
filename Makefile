@@ -3,10 +3,8 @@ SOURCE_GIT_COMMIT ?= $(shell git rev-parse --verify 'HEAD^{commit}')
 BUILD_VERSION ?= $(shell git describe --always --abbrev=40 --dirty)
 
 VERSION_URI ?= github.com/openshift/agent-installer-utils/pkg/version
-RELEASE_IMAGE ?= registry.ci.openshift.org/ocp/release:4.19.0-0.nightly-2025-03-05-160850
+RELEASE_IMAGE ?= quay.io/openshift-release-dev/ocp-release:4.18.4-x86_64
 ARCH ?= x86_64
-PULL_SECRET ?= /home/test/dev-scripts/pull_secret.json
-
 
 .PHONY:clean
 clean:
@@ -23,7 +21,3 @@ build: clean lint
 .PHONY: run
 run: build
 	RELEASE_IMAGE=${RELEASE_IMAGE} SOURCE_GIT_COMMIT=${SOURCE_GIT_COMMIT} BUILD_VERSION=${BUILD_VERSION} ./bin/agent-tui
-
-.PHONY: build-ove-iso
-build-ove-iso:
-	tools/iso_builder/hack/build-ove-image.sh --release-image ${RELEASE_IMAGE} --arch ${ARCH} --pull-secret ${PULL_SECRET}
