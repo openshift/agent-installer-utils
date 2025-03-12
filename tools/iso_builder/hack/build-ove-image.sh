@@ -98,6 +98,12 @@ function extract_live_iso() {
     local READ_DIR="/tmp/iso_builder/appliance"
     mkdir -p "${READ_DIR}"
 
+    if [ ! -f "${APPLIANCE_WORK_DIR}"/appliance.iso ]; then
+        echo "Error: The appliance.iso disk image file is missing."
+        echo "${APPLIANCE_WORK_DIR}"
+        ls -lh "${APPLIANCE_WORK_DIR}"
+        exit 1
+    fi
     # Mount the ISO
     sudo mount -o loop "${APPLIANCE_WORK_DIR}"/appliance.iso "${READ_DIR}"
     VOLUME_LABEL=$(isoinfo -d -i "${APPLIANCE_WORK_DIR}"/appliance.iso | grep "Volume id:" | cut -d' ' -f3-)
