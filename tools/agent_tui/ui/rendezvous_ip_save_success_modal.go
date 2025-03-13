@@ -10,6 +10,7 @@ import (
 const (
 	PAGE_RENDEZVOUS_IP_SAVE_SUCCESS string = "rendezvousIPSaveSuccessPage"
 	CONTINUE_INSTALLATION_BUTTION = "<Continue with installation>"
+	BACK_BUTTON = "<Back>"
 
 	successText    = "Successfully saved %s as the Rendezvous node IP. "
 	otherNodesText = "Enter %s as the Rendezvous node IP on the other nodes that will form the cluster."
@@ -24,13 +25,16 @@ func (u *UI) showRendezvousIPSaveSuccessModal(savedIP string) {
 		if buttonLabel == CONTINUE_INSTALLATION_BUTTION {
 			u.app.Stop()
 		}
+		if buttonLabel == BACK_BUTTON {
+			u.setFocusToSelectIP()
+		}
 	})
 	u.rendezvousIPSaveSuccessModal.SetBackgroundColor(newt.ColorGray) // ContrastBackgroundColor, default is newt.ColorBlue
 	u.rendezvousIPSaveSuccessModal.SetBorder(true)
 	u.rendezvousIPSaveSuccessModal.
 		SetButtonBackgroundColor(newt.ColorGray).
 		SetButtonTextColor(newt.ColorRed)
-	userPromptButtons := []string{CONTINUE_INSTALLATION_BUTTION}
+	userPromptButtons := []string{CONTINUE_INSTALLATION_BUTTION, BACK_BUTTON}
 	u.rendezvousIPSaveSuccessModal.AddButtons(userPromptButtons)
 
 	text := successText
