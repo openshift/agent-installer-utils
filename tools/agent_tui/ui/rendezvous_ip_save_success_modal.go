@@ -9,15 +9,14 @@ import (
 
 const (
 	PAGE_RENDEZVOUS_IP_SAVE_SUCCESS string = "rendezvousIPSaveSuccessPage"
-	CONTINUE_INSTALLATION_BUTTION = "<Continue with installation>"
-	BACK_BUTTON = "<Back>"
+	CONTINUE_INSTALLATION_BUTTION          = "<Continue with installation>"
+	BACK_BUTTON                            = "<Back>"
 
 	successText    = "Successfully saved %s as the Rendezvous node IP. "
 	otherNodesText = "Enter %s as the Rendezvous node IP on the other nodes that will form the cluster."
-	
 )
 
-func (u *UI) showRendezvousIPSaveSuccessModal(savedIP string) {
+func (u *UI) showRendezvousIPSaveSuccessModal(savedIP string, focusForBackButton func()) {
 	// view is the modal asking the user if they would still
 	// like to change their network configuration.
 	u.rendezvousIPSaveSuccessModal = tview.NewModal()
@@ -26,7 +25,7 @@ func (u *UI) showRendezvousIPSaveSuccessModal(savedIP string) {
 			u.app.Stop()
 		}
 		if buttonLabel == BACK_BUTTON {
-			u.setFocusToSelectIP()
+			focusForBackButton()
 		}
 	})
 	u.rendezvousIPSaveSuccessModal.SetBackgroundColor(newt.ColorGray) // ContrastBackgroundColor, default is newt.ColorBlue

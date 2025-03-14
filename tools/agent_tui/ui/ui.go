@@ -25,11 +25,11 @@ type UI struct {
 	dirty               atomic.Value // dirty flag set if the user interacts with the ui
 
 	// Rendezvous node IP workflow
-	rendezvousIPForm            *tview.Form
-	selectIPForm                *tview.Form
-	selectIPList                *tview.List
-	errorModal                  *tview.Modal
-	rendezvousIPFormActive      atomic.Value
+	rendezvousIPForm             *tview.Form
+	selectIPForm                 *tview.Form
+	selectIPList                 *tview.List
+	errorModal                   *tview.Modal
+	rendezvousIPFormActive       atomic.Value
 	rendezvousIPSaveSuccessModal *tview.Modal
 
 	focusableItems []tview.Primitive // the list of widgets that can be focused

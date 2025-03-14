@@ -57,7 +57,7 @@ func (u *UI) createRendezvousIPPage(config checks.Config) {
 			if err != nil {
 				u.ShowErrorDialog(fmt.Sprintf(saveRendezvousIPError, err.Error()))
 			} else {
-				u.showRendezvousIPSaveSuccessModal(ipAddress)
+				u.showRendezvousIPSaveSuccessModal(ipAddress, u.setFocusToRendezvousIP)
 			}
 		}
 	})
