@@ -1,0 +1,13 @@
+[Unit]
+Description=Load assisted web UI image into container storage
+After=run-media-iso.mount
+Before=agent-interactive-console.service
+Requires=run-media-iso.mount
+
+[Service]
+Type=oneshot
+
+ExecStart=/bin/bash /run/media/iso/agent-artifacts/agent-load-assisted-webui.sh
+
+[Install]
+WantedBy=multi-user.target
