@@ -41,10 +41,10 @@ func App(app *tview.Application, rendezvousIP string, config checks.Config, chec
 			PrimitiveBackgroundColor:    newt.ColorGray,
 			ContrastBackgroundColor:     newt.ColorBlue, // inputfield background color
 			MoreContrastBackgroundColor: newt.ColorGray,
-			BorderColor:                 tcell.ColorDefault,
+			BorderColor:                 newt.ColorBlack,
 			TitleColor:                  tcell.ColorDefault,
 			GraphicsColor:               tcell.ColorDefault,
-			PrimaryTextColor:            tcell.ColorDefault,
+			PrimaryTextColor:            newt.ColorBlack,
 			SecondaryTextColor:          newt.ColorBlue, // form field labels
 			TertiaryTextColor:           tcell.ColorDefault,
 			InverseTextColor:            tcell.ColorDefault,
