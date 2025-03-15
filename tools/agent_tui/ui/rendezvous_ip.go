@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	"net"
-	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/checks"
@@ -12,45 +11,53 @@ import (
 )
 
 const (
-	PAGE_RENDEZVOUS_IP        = "rendezvousIPScreen"
-	FIELD_CURRENT_HOST_IP     = "Current node IPs"
-	FIELD_SET_IP              = "Use current node IP as rendezvous"
-	FIELD_RENDEZVOUS_HOST_IP  = "Rendezvous node IP"
-	SAVE_RENDEZVOUS_IP_BUTTON = "<Save and continue>"
-	RENDEZVOUS_HOST_ENV_PATH  = "/etc/assisted/rendezvous-host.env"
+	PAGE_RENDEZVOUS_IP          = "rendezvousIPScreen"
+	PAGE_SET_NODE_AS_RENDEZVOUS = "setNodeAsRendezvousScreen"
+	FIELD_ENTER_RENDEZVOUS_IP   = "Rendezvous IP"
+	SAVE_RENDEZVOUS_IP_BUTTON   = "<Save Rendezvous IP>"
+	SELECT_IP_ADDRESS_BUTTON    = "<Designate this node as the Rendezvous node by selecting one of its IPs>"
+	RENDEZVOUS_HOST_ENV_PATH    = "/etc/assisted/rendezvous-host.env"
 )
+
+func (u *UI) createTextFlex(text string) *tview.Flex {
+	textView := tview.NewTextView()
+	textView.SetText(text)
+	textView.SetWordWrap(true)
+
+	flex := tview.NewFlex().
+		AddItem(textView, 0, 1, false)
+	flex.SetBorder(true)
+	flex.SetBorderColor(newt.ColorGray) // to keep the spacing but have the border invisible
+	return flex
+}
 
 func (u *UI) createRendezvousIPPage(config checks.Config) {
 	u.rendezvousIPForm = tview.NewForm()
 	u.rendezvousIPForm.SetBorder(false)
-	u.rendezvousIPForm.SetBackgroundColor(newt.ColorGray)
 	u.rendezvousIPForm.SetButtonsAlign(tview.AlignCenter)
-	u.rendezvousIPForm.AddInputField(FIELD_CURRENT_HOST_IP, strings.Join(u.hostIPAddresses()[:2], ","), 55, nil, nil)
-	u.rendezvousIPForm.AddInputField(FIELD_RENDEZVOUS_HOST_IP, "", 55, nil, nil)
-	u.rendezvousIPForm.AddCheckbox(FIELD_SET_IP, false, func(checked bool) {
-		field := u.rendezvousIPForm.GetFormItemByLabel(FIELD_RENDEZVOUS_HOST_IP).(*tview.InputField)
-		if checked && len(u.hostIPAddresses()) > 0 {
-			field.SetText(u.hostIPAddresses()[0])
-		} else {
-			// unchecked, reset rendezvous IP field
-			field.SetText("")
-		}
-	})
+
+	rendezvousIPFormDescription := "Enter the Rendezvous node's IP address if one has been designated."
+	rendezvousTextFlex := u.createTextFlex(rendezvousIPFormDescription)
+	rendezvousTextNumRows := 3
+
+	u.rendezvousIPForm.AddInputField(FIELD_ENTER_RENDEZVOUS_IP, "", 55, nil, nil)
+	u.rendezvousIPForm.SetFieldTextColor(newt.ColorGray)
 
 	u.rendezvousIPForm.AddButton(SAVE_RENDEZVOUS_IP_BUTTON, func() {
 		// save rendezvous IP address and switch to checks page
-		ipAddress := u.rendezvousIPForm.GetFormItemByLabel(FIELD_RENDEZVOUS_HOST_IP).(*tview.InputField).GetText()
+		ipAddress := u.rendezvousIPForm.GetFormItemByLabel(FIELD_ENTER_RENDEZVOUS_IP).(*tview.InputField).GetText()
 		validationError := validateIP(ipAddress)
 		if validationError != "" {
+			if ipAddress == "" {
+				ipAddress = "<blank>"
+			}
 			u.ShowErrorDialog(fmt.Sprintf(invalidIPText, ipAddress))
 		} else {
-			err := saveRendezvousIPAddress(ipAddress)
+			err := u.saveRendezvousIPAddress(ipAddress)
 			if err != nil {
 				u.ShowErrorDialog(fmt.Sprintf(saveRendezvousIPError, err.Error()))
 			} else {
-				// set focus to checks page and let controller know rendezvousIP is set
-				u.setIsRendezousIPFormActive(false)
-				u.setFocusToChecks()
+				u.showRendezvousIPSaveSuccessModal(ipAddress, u.setFocusToRendezvousIP)
 			}
 		}
 	})
@@ -59,18 +66,35 @@ func (u *UI) createRendezvousIPPage(config checks.Config) {
 	u.rendezvousIPForm.SetButtonStyle(tcell.StyleDefault.Background(newt.ColorGray).
 		Foreground(newt.ColorBlack))
 
+	selectFormDescription := "----------------------------------- or ------------------------------------\n\n"
+	selectTextFlex := u.createTextFlex(selectFormDescription)
+	selectTextNumRows := 3
+
+	u.selectIPForm = tview.NewForm()
+	u.selectIPForm.SetBorder(false)
+	u.selectIPForm.SetButtonsAlign(tview.AlignCenter)
+	u.selectIPForm.AddButton(SELECT_IP_ADDRESS_BUTTON, func() {
+		// switch to select IP address page
+		u.setFocusToSelectIP()
+	})
+	u.selectIPForm.SetButtonActivatedStyle(tcell.StyleDefault.Background(newt.ColorRed).
+		Foreground(newt.ColorGray))
+	u.selectIPForm.SetButtonStyle(tcell.StyleDefault.Background(newt.ColorGray).
+		Foreground(newt.ColorBlack))
+
 	mainFlex := tview.NewFlex().
 		SetDirection(tview.FlexRow).
-		AddItem(u.rendezvousIPForm, 8+2, 0, false)
-	mainFlex.SetTitle("  Rendezvous Host IP Setup  ").
+		AddItem(rendezvousTextFlex, rendezvousTextNumRows, 0, false).
+		AddItem(u.rendezvousIPForm, 5, 0, false).
+		AddItem(selectTextFlex, selectTextNumRows, 0, false).
+		AddItem(u.selectIPForm, 4, 0, false)
+	mainFlex.SetTitle("  Rendezvous Node IP Setup  ").
 		SetTitleColor(newt.ColorRed).
-		SetBorder(true).
-		SetBackgroundColor(newt.ColorGray).
-		SetBorderColor(tcell.ColorBlack)
+		SetBorder(true)
 
 	innerFlex := tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(nil, 0, 1, false).
-		AddItem(mainFlex, mainFlexHeight+2, 0, false).
+		AddItem(mainFlex, mainFlexHeight+1+rendezvousTextNumRows+selectTextNumRows, 0, false).
 		AddItem(nil, 0, 1, false)
 
 	// Allow the user to cycle the focus only over the configured items
@@ -103,7 +127,6 @@ func (u *UI) createRendezvousIPPage(config checks.Config) {
 		AddItem(innerFlex, width, 1, false).
 		AddItem(nil, 0, 1, false)
 
-	u.pages.SetBackgroundColor(newt.ColorBlue)
 	u.pages.AddPage(PAGE_RENDEZVOUS_IP, flex, true, true)
 }
 
@@ -112,25 +135,4 @@ func validateIP(ipAddress string) string {
 		return fmt.Sprintf("%s is not a valid IP address", ipAddress)
 	}
 	return ""
-}
-
-func (u *UI) hostIPAddresses() []string {
-	addrs, err := net.InterfaceAddrs()
-	if err != nil {
-		u.logger.Errorf("Could not fetch host IPs: %v", err)
-	}
-	ipv4 := []string{}
-	ipv6 := []string{}
-	for _, addr := range addrs {
-		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-			if ipnet.IP.To4() != nil && !ipnet.IP.IsLinkLocalUnicast() {
-				ipv4 = append(ipv4, ipnet.IP.String())
-			} else if ipnet.IP.To16() != nil {
-				ipv6 = append(ipv6, ipnet.IP.String())
-			}
-		}
-	}
-	u.logger.Infof("current host IPv4 addresses: %v", ipv4)
-	u.logger.Infof("current host IPv6 addresses: %v", ipv6)
-	return append(ipv4, ipv6...)
 }
