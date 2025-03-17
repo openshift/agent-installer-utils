@@ -10,7 +10,7 @@ type rendezvousHostEnvTemplateData struct {
 	RendezvousIP string
 }
 
-func saveRendezvousIPAddress(ipAddress string) error {
+func (u *UI) saveRendezvousIPAddress(ipAddress string) error {
 	templateData := &rendezvousHostEnvTemplateData{
 		RendezvousIP: ipAddress,
 	}
@@ -18,6 +18,8 @@ func saveRendezvousIPAddress(ipAddress string) error {
 	if err != nil {
 		return err
 	}
+
+	u.logger.Infof("Saved %s as Rendezvous IP", ipAddress)
 
 	return nil
 }

@@ -6,8 +6,10 @@ import (
 	"log"
 	"os"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/openshift/agent-installer-utils/pkg/version"
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/checks"
+	"github.com/openshift/agent-installer-utils/tools/agent_tui/newt"
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/ui"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
@@ -31,10 +33,25 @@ func App(app *tview.Application, rendezvousIP string, config checks.Config, chec
 	logger.Infof("Release Image URL: %s", config.ReleaseImageURL)
 	logger.Infof("Agent TUI git version: %s", version.Commit)
 	logger.Infof("Agent TUI build version: %s", version.Raw)
-	logger.Infof("NODE_ZERO_IP: %s", rendezvousIP)
+	logger.Infof("Rendezvous IP: %s", rendezvousIP)
 
 	var appUI *ui.UI
 	if app == nil {
+		theme := tview.Theme{
+			PrimitiveBackgroundColor:    newt.ColorGray,
+			ContrastBackgroundColor:     newt.ColorBlue, // inputfield background color
+			MoreContrastBackgroundColor: newt.ColorGray,
+			BorderColor:                 newt.ColorBlack,
+			TitleColor:                  tcell.ColorDefault,
+			GraphicsColor:               tcell.ColorDefault,
+			PrimaryTextColor:            newt.ColorBlack,
+			SecondaryTextColor:          newt.ColorBlue, // form field labels
+			TertiaryTextColor:           tcell.ColorDefault,
+			InverseTextColor:            tcell.ColorDefault,
+			ContrastSecondaryTextColor:  tcell.ColorDefault,
+		}
+		tview.Styles = theme
+
 		app = tview.NewApplication()
 	}
 	appUI = ui.NewUI(app, config, logger)

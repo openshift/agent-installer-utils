@@ -7,6 +7,8 @@ import (
 
 	"github.com/nmstate/nmstate/rust/src/go/nmstate/v2"
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/net"
+	"github.com/openshift/agent-installer-utils/tools/agent_tui/newt"
+	"github.com/rivo/tview"
 )
 
 func (u *UI) ShowNMTUI() error {
@@ -43,4 +45,18 @@ func (u *UI) ShowNMTUI() error {
 	u.pages.AddPage("netstate", netStatePage, true, true)
 
 	return nil
+}
+
+func (u *UI) showNMTUIWithErrorDialog(doneFunc func()) {
+	if err := u.ShowNMTUI(); err != nil {
+		errorDialog := tview.NewModal().
+			SetBackgroundColor(newt.ColorBlack).
+			SetText(err.Error()).
+			AddButtons([]string{"Ok"}).
+			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+				doneFunc()
+			})
+		u.pages.AddPage("error", errorDialog, false, true)
+	}
+	doneFunc()
 }
