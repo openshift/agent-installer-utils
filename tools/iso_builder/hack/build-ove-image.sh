@@ -1,7 +1,9 @@
 #!/bin/bash
 
-# Fail on unset variables and errors
 set -euo pipefail
+
+SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source $SCRIPTDIR/utils.sh
 
 function usage() {
     echo "----------------------------------------------------------------------------------------------------------------------"
@@ -56,11 +58,11 @@ function validate_inputs() {
 
 function create_appliance_config() {
     echo "Creating appliance config..."
-    local OCP_VERSION=$1
+    local major_minor_patch_ocp_version=$(echo "\"$1\"" | jq -r 'split(":")[1] | split("-")[0]')
     local release_url=$2
-    local PULLSECRET=$3
+    local pullSecret=$3
 
-    APPLIANCE_WORK_DIR="/tmp/iso_builder/appliance-assets-$OCP_VERSION"
+    APPLIANCE_WORK_DIR="/tmp/iso_builder/appliance-assets-$FULL_OCP_VERSION"
     mkdir -p "${APPLIANCE_WORK_DIR}"
 
 # ToDo: Add rendezvousIp: user_specified_rendezvous_ip_address
@@ -68,10 +70,10 @@ function create_appliance_config() {
 apiVersion: v1beta1
 kind: ApplianceConfig
 ocpRelease:
-  version: "${OCP_VERSION}"
+  version: "${major_minor_patch_ocp_version}"
   url: "${release_url}"
 diskSizeGB: 200
-pullSecret: '$(cat "${PULLSECRET}")'
+pullSecret: '$(cat "${pullSecret}")'
 imageRegistry:
   uri: quay.io/libpod/registry:2.8
 userCorePass: core
@@ -86,9 +88,18 @@ EOF
 }
 
 function build_live_iso() {
+    local version=$1
     echo "Building appliance ISO..."
+    
     local PULL_SPEC=quay.io/edge-infrastructure/openshift-appliance:latest
-    sudo podman run --rm -it --privileged --pull always --net=host -v "${APPLIANCE_WORK_DIR}"/:/assets:Z  "${PULL_SPEC}" build live-iso
+    if [[ -n "${CUSTOM_OPENSHIFT_INSTALLER_PATH}" ]]; then
+        echo "Using custom openshift installer from ${CUSTOM_OPENSHIFT_INSTALLER_PATH}"
+        patch_openshift_install_release_version "${version}"
+        sudo podman run --rm -it --privileged --pull always --net=host -v "${APPLIANCE_WORK_DIR}"/:/assets:Z  "${PULL_SPEC}" build live-iso --log-level=debug --debug-base-ignition
+    else
+        sudo podman run --rm -it --privileged --pull always --net=host -v "${APPLIANCE_WORK_DIR}"/:/assets:Z  "${PULL_SPEC}" build live-iso --log-level=debug
+    fi
+    
 }
 
 function extract_live_iso() {
@@ -211,6 +222,7 @@ EOF
 
 function cleanup() {
     sudo rm -rf "${WORK_DIR}"
+    rm -rf ${APPLIANCE_WORK_DIR}/openshift-install
 }
 
 function main()
@@ -221,11 +233,13 @@ function main()
     validate_inputs
 
     WORK_DIR="/tmp/iso_builder/ove-iso"
+    
     mkdir -p "${WORK_DIR}"
 
-    OCP_VERSION=$(echo $RELEASE_VERSION | awk -F ':' '{print $2}' | awk -F'-' '{print $1}')
-    create_appliance_config "${OCP_VERSION}" "${RELEASE_VERSION}" "${PULL_SECRET}"
-    build_live_iso
+    FULL_OCP_VERSION=$(echo "\"$RELEASE_VERSION\"" | jq -r 'split(":")[1]')
+
+    create_appliance_config "${RELEASE_VERSION}" "${ARCH}" "${PULL_SECRET}"
+    build_live_iso "${FULL_OCP_VERSION}"
     extract_live_iso
     setup_agent_artifacts "${PULL_SECRET}"
     create_ove_iso
