@@ -12,13 +12,24 @@ function usage() {
     echo "The default architecture is x86_64."
     echo
     echo "Usage:"
-    echo "$0 --release-image <openshift-release> --arch <architecture> --pull-secret <pull-secret> --rendezvousIP [rendezvousIP]"
-    echo
+    echo "  ./hack/build-ove-image.sh [OPTIONS]"
+    echo ""
+    echo "Required Options:"
+    echo "  --pull-secret <path>           Path to the pull secret file (e.g., ~/pull_secret.json)"
+    echo ""
+    echo "One of the following must be specified:"
+    echo "  --release-image-url <url>      OpenShift release image URL (e.g., registry.ci.openshift.org/ocp/release:4.19.0-0.ci-2025-03-18-173638)"
+    echo "  --ocp-version <version>        OpenShift version in major.minor.patch format (e.g., 4.18.4)"
+    echo ""
+    echo "Optional:"
+    echo "  --arch <architecture>          Target CPU architecture (default: x86_64)"
+    echo "  --rendezvousIP <IP>            (Optional) Rendezvous IP for the cluster"
+    echo ""
     echo "Examples:"
-    echo "$0 --release-image registry.ci.openshift.org/ocp/release:4.19.0-0.ci-2025-02-26-035445 --arch x86_64 --pull-secret ~/pull_secret.json"
-    echo "$0 --release-image registry.ci.openshift.org/ocp/release:4.19.0-0.ci-2025-02-26-035445 --pull-secret ~/pull_secret.json"
-    echo "$0 --release-image registry.ci.openshift.org/ocp/release:4.19.0-0.ci-2025-02-26-035445 --pull-secret ~/pull_secret.json --rendezvousIP 192.168.122.2"
-    echo
+    echo "$0 --pull-secret ~/pull_secret.json --release-image-url registry.ci.openshift.org/ocp/release:4.19.0-0.ci-2025-03-18-173638"
+    echo "$0 --pull-secret ~/pull_secret.json --ocp-version 4.18.4"
+    echo "$0 --pull-secret ~/pull_secret.json --ocp-version 4.18.4 --arch x86_64"
+    echo "$0 --pull-secret ~/pull_secret.json --ocp-version 4.18.4 --rendezvousIP 192.168.122.2"
     echo "Outputs:"
     echo "  - agent-ove-x86_64.iso: Bootable agent OVE ISO image."
     echo
@@ -30,37 +41,71 @@ function usage() {
 }
 
 function parse_inputs() {
-    ARCH="x86_64"
     while [[ "$#" -gt 0 ]]; do
         case $1 in
-            --release-image) RELEASE_VERSION="$2"; shift ;;
+            --release-image-url) 
+                if [[ -n "$RELEASE_VERSION" ]]; then
+                    echo "Error: Cannot specify both --release-image-url and --ocp-version." >&2
+                    exit 1
+                fi
+                RELEASE_IMAGE_URL="$2"; shift ;;
+            --ocp-version) 
+                if [[ -n "$RELEASE_IMAGE_URL" ]]; then
+                    echo "Error: Cannot specify both --release-image-url and --ocp-version." >&2
+                    exit 1
+                fi
+                RELEASE_VERSION="$2"; shift ;;
             --arch) ARCH="$2"; shift ;;
             --pull-secret) PULL_SECRET="$2"; shift ;;
             --rendezvousIP) RENDEZVOUS_IP="$2"; shift ;;
-            *) echo "Unknown parameter: $1"; exit 1 ;;
+            *) 
+                echo "Unknown parameter: $1" >&2
+                exit 1 ;;
         esac
         shift
     done
 }
 
 function validate_inputs() {
-    if [[ -z "${RELEASE_VERSION:-}" || -z "${ARCH:-}" || -z "${PULL_SECRET:-}" ]]; then
-        echo "Error: OpenShift version, architecture and pull secret are required."
+    if [[ -z "${RELEASE_VERSION:-}" && -z "${RELEASE_IMAGE_URL:-}" ]]; then
+        echo "Error: Either OpenShift version (--ocp-version) or release image URL (--release-image-url) must be provided." >&2
         exit 1
     fi
+
+    if [[ -z "${PULL_SECRET:-}" ]]; then
+        echo "Error: Pull secret is required." >&2
+        exit 1
+    fi
+
     if [ ! -f "$PULL_SECRET" ]; then
-        echo "File $PULL_SECRET does not exist." >&2
+        echo "Error: File $PULL_SECRET does not exist." >&2
+        exit 1
+    fi
+
+    # Use default architecture if not provided
+    # To do: Validate if provided arch is a valid one [AMD64 (x86_64), s390x (IBM System Z), ppc64 little endian (Power PC) or arm (aarch64)]
+    if [[ -z "${ARCH:-}" ]]; then
+        ARCH="x86_64"
+        echo "Warning: Architecture not specified. Using default architecture: $ARCH."
+    fi
+
+    # Ensure that the OCP version is in the format `x.y.z`
+    if [[ -n "$RELEASE_VERSION" && ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        echo "Error: RELEASE_VERSION must be in the format major.minor.patch (e.g., 4.18.4)." >&2
         exit 1
     fi
 }
 
 function create_appliance_config() {
     echo "Creating appliance config..."
-    local OCP_VERSION=$1
+    local version=$1
     local release_url=$2
-    local PULLSECRET=$3
+    local arch=$3
+    local pullSecret=$4
 
-    APPLIANCE_WORK_DIR="/tmp/iso_builder/appliance-assets-$OCP_VERSION"
+    local major_minor_patch_version=$(echo "\"$FULL_OCP_VERSION\"" | jq -r 'split("-")[0]')
+
+    APPLIANCE_WORK_DIR="/tmp/iso_builder/appliance-assets-$FULL_OCP_VERSION"
     mkdir -p "${APPLIANCE_WORK_DIR}"
 
 # ToDo: Add rendezvousIp: user_specified_rendezvous_ip_address
@@ -68,10 +113,14 @@ function create_appliance_config() {
 apiVersion: v1beta1
 kind: ApplianceConfig
 ocpRelease:
-  version: "${OCP_VERSION}"
-  url: "${release_url}"
+  # Always include version, either directly from --ocp-version or extracted from --release-image-url
+  $( [[ -n "$version" ]] && printf "version: \"%s\"\n" "$version" ) # Use value from --ocp-version, if provided
+  $( [[ -z "$version" && -n "$release_url" ]] && printf "version: \"%s\"\n" "$major_minor_patch_version" )  # Extract value from --release-image-url, if --ocp-version not specified
+  $( [[ -n "$version" ]] && printf "channel: candidate\n" ) # Add channel only if --ocp-version is provided
+  $( [[ -n "$version" ]] && printf "cpuArchitecture: \"%s\"\n" "$arch" ) # Add cpuArchitecture only if --ocp-version is provided
+  $( [[ -n "$release_url" ]] && printf "url: \"%s\"\n" "$release_url")  # Add URL if provided
 diskSizeGB: 200
-pullSecret: '$(cat "${PULLSECRET}")'
+pullSecret: '$(cat "${pullSecret}")'
 imageRegistry:
   uri: quay.io/libpod/registry:2.8
 userCorePass: core
@@ -215,7 +264,12 @@ function cleanup() {
 
 function main()
 {
+    PULL_SECRET=""
+    RELEASE_VERSION=""
+    RELEASE_IMAGE_URL=""
+    ARCH=""
     RENDEZVOUS_IP=""
+    FULL_OCP_VERSION=""
 
     parse_inputs "$@"
     validate_inputs
@@ -223,8 +277,16 @@ function main()
     WORK_DIR="/tmp/iso_builder/ove-iso"
     mkdir -p "${WORK_DIR}"
 
-    OCP_VERSION=$(echo $RELEASE_VERSION | awk -F ':' '{print $2}' | awk -F'-' '{print $1}')
-    create_appliance_config "${OCP_VERSION}" "${RELEASE_VERSION}" "${PULL_SECRET}"
+    # Check if appropriate parameters are provided and invoke the function
+    if [[ -n "${RELEASE_VERSION}" && -z "${RELEASE_IMAGE_URL}" ]]; then
+        FULL_OCP_VERSION="${RELEASE_VERSION}"
+        echo "Using OCP version ${RELEASE_VERSION}"
+        create_appliance_config "${RELEASE_VERSION}" "" "${ARCH}" "${PULL_SECRET}"
+    elif [[ -n "${RELEASE_IMAGE_URL}" && -z "${RELEASE_VERSION}" ]]; then
+        echo "Using release image ${RELEASE_IMAGE_URL}"
+        FULL_OCP_VERSION=$(echo "\"$RELEASE_IMAGE_URL\"" | jq -r 'split(":")[1]')
+        create_appliance_config "" "${RELEASE_IMAGE_URL}" "${ARCH}" "${PULL_SECRET}"
+    fi
     build_live_iso
     extract_live_iso
     setup_agent_artifacts "${PULL_SECRET}"
