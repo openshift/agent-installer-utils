@@ -63,7 +63,6 @@ function create_appliance_config() {
     APPLIANCE_WORK_DIR="/tmp/iso_builder/appliance-assets-$OCP_VERSION"
     mkdir -p "${APPLIANCE_WORK_DIR}"
 
-# ToDo: Add enableInteractiveFlow: true
 # ToDo: Add rendezvousIp: user_specified_rendezvous_ip_address
   cat >"${APPLIANCE_WORK_DIR}/appliance-config.yaml" <<EOF
 apiVersion: v1beta1
@@ -79,6 +78,7 @@ imageRegistry:
 userCorePass: core
 stopLocalRegistry: false
 enableDefaultSources: false
+enableInteractiveFlow: true
 operators:
   - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
     packages:
