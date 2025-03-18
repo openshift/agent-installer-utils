@@ -58,8 +58,7 @@ function create_appliance_config() {
     echo "Creating appliance config..."
     local OCP_VERSION=$1
     local release_url=$2
-    local ARCH=$3
-    local PULLSECRET=$4
+    local PULLSECRET=$3
 
     APPLIANCE_WORK_DIR="/tmp/iso_builder/appliance-assets-$OCP_VERSION"
     mkdir -p "${APPLIANCE_WORK_DIR}"
@@ -71,8 +70,6 @@ kind: ApplianceConfig
 ocpRelease:
   version: "${OCP_VERSION}"
   url: "${release_url}"
-  channel: candidate
-  cpuArchitecture: "${ARCH}"
 diskSizeGB: 200
 pullSecret: '$(cat "${PULLSECRET}")'
 imageRegistry:
@@ -227,7 +224,7 @@ function main()
     mkdir -p "${WORK_DIR}"
 
     OCP_VERSION=$(echo $RELEASE_VERSION | awk -F ':' '{print $2}' | awk -F'-' '{print $1}')
-    create_appliance_config "${OCP_VERSION}" "${RELEASE_VERSION}" "${ARCH}" "${PULL_SECRET}"
+    create_appliance_config "${OCP_VERSION}" "${RELEASE_VERSION}" "${PULL_SECRET}"
     build_live_iso
     extract_live_iso
     setup_agent_artifacts "${PULL_SECRET}"
