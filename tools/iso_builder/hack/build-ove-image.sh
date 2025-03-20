@@ -131,6 +131,7 @@ operators:
   - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
     packages:
       - name: mtv-operator
+      - name: kubernetes-nmstate-operator
 EOF
 }
 
