@@ -21,6 +21,8 @@ type Config struct {
 
 	ReleaseImageHostname           string
 	ReleaseImageSchemeHostnamePort string
+
+	WorkflowType string
 }
 
 // ChecksEngine is the model part, and is composed by a number
@@ -91,25 +93,32 @@ var defaultCheckFunctions = CheckFunctions{
 func NewEngine(c chan CheckResult, config Config, logger *logrus.Logger, checkFuncs ...CheckFunctions) *Engine {
 	checks := []*Check{}
 
-	cf := defaultCheckFunctions
-	if len(checkFuncs) > 0 {
-		cf = checkFuncs[0]
-	}
+	switch config.WorkflowType {
+	case "install-interactive-disconnected":
+		// The install-interactive-disconnected workflow has the release image
+		// contents included in its live ISO. Checking release image
+		// connectivity is not needed.
+	default:
+		cf := defaultCheckFunctions
+		if len(checkFuncs) > 0 {
+			cf = checkFuncs[0]
+		}
 
-	// create checks
-	for cType, cFunc := range cf {
-		ct := cType
-		cf := cFunc
-		checks = append(checks, &Check{
-			Type: ct,
-			Freq: 5 * time.Second,
-			Run: func(c chan CheckResult, freq time.Duration) {
-				for {
-					c <- createCheckResult(cf, ct, config, logger)
-					time.Sleep(freq)
-				}
-			},
-		})
+		// create checks
+		for cType, cFunc := range cf {
+			ct := cType
+			cf := cFunc
+			checks = append(checks, &Check{
+				Type: ct,
+				Freq: 5 * time.Second,
+				Run: func(c chan CheckResult, freq time.Duration) {
+					for {
+						c <- createCheckResult(cf, ct, config, logger)
+						time.Sleep(freq)
+					}
+				},
+			})
+		}
 	}
 
 	return &Engine{
