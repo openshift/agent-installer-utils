@@ -3,6 +3,8 @@
 # Fail on unset variables and errors
 set -euo pipefail
 
+export SSH_KEY_FILE=""
+
 function usage() {
     echo "----------------------------------------------------------------------------------------------------------------------"
     echo "ABI OVE Image Builder"
@@ -37,6 +39,7 @@ function parse_inputs() {
             --arch) ARCH="$2"; shift ;;
             --pull-secret) PULL_SECRET="$2"; shift ;;
             --rendezvousIP) RENDEZVOUS_IP="$2"; shift ;;
+            --ssh-key-file) SSH_KEY_FILE="$2"; shift ;;
             *) echo "Unknown parameter: $1"; exit 1 ;;
         esac
         shift
@@ -52,6 +55,10 @@ function validate_inputs() {
         echo "File $PULL_SECRET does not exist." >&2
         exit 1
     fi
+    if [[ -n "$SSH_KEY_FILE" && ! -f "$SSH_KEY_FILE" ]]; then
+        echo "File $SSH_KEY_FILE does not exist." >&2
+        exit 1
+    fi
 }
 
 function create_appliance_config() {
@@ -64,7 +71,9 @@ function create_appliance_config() {
     mkdir -p "${APPLIANCE_WORK_DIR}"
 
 # ToDo: Add rendezvousIp: user_specified_rendezvous_ip_address
-  cat >"${APPLIANCE_WORK_DIR}/appliance-config.yaml" <<EOF
+    cfg=${APPLIANCE_WORK_DIR}/appliance-config.yaml
+
+    cat << EOF >> ${cfg}  
 apiVersion: v1beta1
 kind: ApplianceConfig
 ocpRelease:
@@ -78,6 +87,15 @@ userCorePass: core
 stopLocalRegistry: false
 enableDefaultSources: false
 enableInteractiveFlow: true
+EOF
+
+    if [[ -n "$SSH_KEY_FILE" ]]; then
+        cat << EOF >> ${cfg} 
+sshKey: '$(cat "${SSH_KEY_FILE}")'
+EOF
+    fi
+
+    cat << EOF >> ${cfg} 
 operators:
   - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
     packages:
