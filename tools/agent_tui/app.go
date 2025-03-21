@@ -34,6 +34,7 @@ func App(app *tview.Application, rendezvousIP string, config checks.Config, chec
 	logger.Infof("Agent TUI git version: %s", version.Commit)
 	logger.Infof("Agent TUI build version: %s", version.Raw)
 	logger.Infof("Rendezvous IP: %s", rendezvousIP)
+	logger.Infof("Workflow Type: %s", config.WorkflowType)
 
 	var appUI *ui.UI
 	if app == nil {
