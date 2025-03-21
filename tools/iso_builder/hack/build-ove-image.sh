@@ -95,7 +95,7 @@ function build_live_iso() {
     if [[ -n "${CUSTOM_OPENSHIFT_INSTALLER_PATH}" ]]; then
         echo "Using custom openshift installer from ${CUSTOM_OPENSHIFT_INSTALLER_PATH}"
         patch_openshift_install_release_version "${version}"
-        sudo podman run --rm -it --privileged --pull always --net=host -v "${APPLIANCE_WORK_DIR}"/:/assets:Z  "${PULL_SPEC}" build live-iso --log-level=debug --debug-base-ignition
+        sudo podman run --rm -it --privileged --pull always --net=host -v "${APPLIANCE_WORK_DIR}"/:/assets:Z  --env OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE=${RELEASE_VERSION} "${PULL_SPEC}" build live-iso --log-level=debug --debug-base-ignition
     else
         sudo podman run --rm -it --privileged --pull always --net=host -v "${APPLIANCE_WORK_DIR}"/:/assets:Z  "${PULL_SPEC}" build live-iso --log-level=debug
     fi
