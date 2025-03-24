@@ -1,0 +1,10 @@
+FROM quay.io/centos/centos:stream9
+WORKDIR /isobuilder
+
+RUN dnf install -y podman && dnf clean all
+
+COPY . .
+
+RUN chmod +x /isobuilder/hack/build-ove-image.sh
+
+ENTRYPOINT ["hack/build-ove-image.sh"]
