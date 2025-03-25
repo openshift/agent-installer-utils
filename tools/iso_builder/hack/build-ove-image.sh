@@ -2,6 +2,9 @@
 
 # Fail on unset variables and errors
 set -euo pipefail
+SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+LOGDIR=/tmp/iso_builder/logs
+source $SCRIPTDIR/logging.sh
 
 function usage() {
     echo "----------------------------------------------------------------------------------------------------------------------"
