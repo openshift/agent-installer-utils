@@ -122,8 +122,6 @@ apiVersion: v1beta1
 kind: ApplianceConfig
 diskSizeGB: 200
 pullSecret: '$(cat "${PULL_SECRET_FILE}")'
-imageRegistry:
-  uri: quay.io/libpod/registry:2.8
 userCorePass: core
 stopLocalRegistry: false
 enableDefaultSources: false
