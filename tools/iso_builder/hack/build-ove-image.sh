@@ -155,7 +155,7 @@ EOF
 function build_live_iso() {
     echo "Building appliance ISO..."
     local PULL_SPEC=quay.io/edge-infrastructure/openshift-appliance:latest
-    podman run --rm -it --privileged --pull always --net=host -v "${APPLIANCE_WORK_DIR}"/:/assets:Z  "${PULL_SPEC}" build live-iso
+    sudo podman run --rm -it --privileged --pull always --net=host -v "${APPLIANCE_WORK_DIR}"/:/assets:Z  "${PULL_SPEC}" build live-iso
 }
 
 function extract_live_iso() {
@@ -171,17 +171,17 @@ function extract_live_iso() {
         exit 1
     fi
     # Mount the ISO
-    mount -o loop "${APPLIANCE_WORK_DIR}"/appliance.iso "${READ_DIR}"
+    sudo mount -o loop "${APPLIANCE_WORK_DIR}"/appliance.iso "${READ_DIR}"
     VOLUME_LABEL=$(isoinfo -d -i "${APPLIANCE_WORK_DIR}"/appliance.iso | grep "Volume id:" | cut -d' ' -f3-)
 
     echo "Copying appliance ISO contents to a writable directory..."
-    rsync -aH --info=progress2 "${READ_DIR}/" "${WORK_DIR}/"
+    sudo rsync -aH --info=progress2 "${READ_DIR}/" "${WORK_DIR}/"
 
-    chown -R $(whoami):$(whoami) "${WORK_DIR}/"
+    sudo chown -R $(whoami):$(whoami) "${WORK_DIR}/"
 
     # Cleanup
-    umount "${READ_DIR}"
-    rm -rf "${READ_DIR}"
+    sudo umount "${READ_DIR}"
+    sudo rm -rf "${READ_DIR}"
 
 }
 
@@ -212,11 +212,11 @@ function setup_agent_artifacts() {
     mksquashfs "${ARTIFACTS_DIR}" "${WORK_DIR}"/agent-artifacts.squashfs -comp xz -b 1M -Xdict-size 512K
 
     # Cleanup directory and save only one archieved file
-    rm -rf "${ARTIFACTS_DIR}"/*
-    mv "${WORK_DIR}"/agent-artifacts.squashfs "${ARTIFACTS_DIR}"
+    sudo rm -rf "${ARTIFACTS_DIR}"/*
+    sudo mv "${WORK_DIR}"/agent-artifacts.squashfs "${ARTIFACTS_DIR}"
 
     # copy the custom script for systemd
-    cp data/ove/data/files/usr/local/bin/setup-agent-tui.sh "${ARTIFACTS_DIR}"/setup-agent-tui.sh
+    sudo cp data/ove/data/files/usr/local/bin/setup-agent-tui.sh "${ARTIFACTS_DIR}"/setup-agent-tui.sh
 
     # Copy assisted-installer-ui image to /images dir
     local IMAGE=assisted-install-ui
@@ -276,7 +276,7 @@ EOF
 }
 
 function cleanup() {
-    rm -rf "${WORK_DIR}"
+    sudo rm -rf "${WORK_DIR}"
 }
 
 function main()
