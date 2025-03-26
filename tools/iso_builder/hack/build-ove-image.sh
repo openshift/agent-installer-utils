@@ -103,21 +103,27 @@ function validate_inputs() {
     fi
 }
 
-function create_appliance_config() {
-    echo "Creating appliance config..."
-    local full_ocp_version
-    
+function setup_vars() {
+    FULL_OCP_VERSION=""
+    IMAGE_REF=""
     if [ -n "${RELEASE_IMAGE_VERSION}" ]; then
         echo "Using OCP version ${RELEASE_IMAGE_VERSION}"
-        full_ocp_version="${RELEASE_IMAGE_VERSION}"
+        FULL_OCP_VERSION="${RELEASE_IMAGE_VERSION}"
+        IMAGE_REF="${RELEASE_IMAGE_VERSION}"
     fi
     if [ -n "${RELEASE_IMAGE_URL}" ]; then
         echo "Using release image ${RELEASE_IMAGE_URL}"
-        full_ocp_version=$(echo "\"$RELEASE_IMAGE_URL\"" | jq -r 'split(":")[1]')
+        FULL_OCP_VERSION=$(echo "\"$RELEASE_IMAGE_URL\"" | jq -r 'split(":")[1]')
+        IMAGE_REF="${RELEASE_IMAGE_URL}"
     fi
-    local major_minor_patch_version=$(echo "\"$full_ocp_version\"" | jq -r 'split("-")[0]')
+}
 
-    APPLIANCE_WORK_DIR="/tmp/iso_builder/appliance-assets-$full_ocp_version"
+function create_appliance_config() {
+    echo "Creating appliance config..."
+    
+    local major_minor_patch_version=$(echo "\"$FULL_OCP_VERSION\"" | jq -r 'split("-")[0]')
+
+    APPLIANCE_WORK_DIR="/tmp/iso_builder/appliance-assets-$FULL_OCP_VERSION"
     mkdir -p "${APPLIANCE_WORK_DIR}"
 
     cfg=${APPLIANCE_WORK_DIR}/appliance-config.yaml
@@ -209,7 +215,7 @@ function setup_agent_artifacts() {
     local ARTIFACTS_DIR="${WORK_DIR}"/agent-artifacts
     mkdir -p "${ARTIFACTS_DIR}"
 
-    local IMAGE_PULL_SPEC=$(oc adm release info --registry-config="${PULL_SECRET_FILE}" --image-for=agent-installer-utils --filter-by-os=linux/"${osarch}" --insecure=true "${RELEASE_IMAGE_URL}")
+    local IMAGE_PULL_SPEC=$(oc adm release info --registry-config="${PULL_SECRET_FILE}" --image-for=agent-installer-utils --filter-by-os=linux/"${osarch}" --insecure=true "${IMAGE_REF}")
     
     local FILES=("/usr/bin/agent-tui" "/usr/lib64/libnmstate.so.*")
     for FILE in "${FILES[@]}"; do
@@ -300,6 +306,7 @@ function main()
 
     parse_inputs "$@"
     validate_inputs
+    setup_vars
 
     WORK_DIR="/tmp/iso_builder/ove-iso"
     mkdir -p "${WORK_DIR}"
