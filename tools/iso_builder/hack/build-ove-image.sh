@@ -6,6 +6,8 @@ SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 LOGDIR=/tmp/iso_builder/logs
 source $SCRIPTDIR/logging.sh
 
+export SSH_KEY_FILE=""
+
 function usage() {
     echo "----------------------------------------------------------------------------------------------------------------------"
     echo "ABI OVE Image Builder"
@@ -58,6 +60,7 @@ function parse_inputs() {
                 RELEASE_IMAGE_VERSION="$2"; shift ;;
             --arch) ARCH="$2"; shift ;;
             --pull-secret-file) PULL_SECRET_FILE="$2"; shift ;;
+            --ssh-key-file) SSH_KEY_FILE="$2"; shift ;;
             *) 
                 echo "Unknown parameter: $1" >&2
                 exit 1 ;;
@@ -94,6 +97,10 @@ function validate_inputs() {
         echo "Error: OpenShift version (--ocp-version) must be in the format major.minor.patch (e.g., 4.18.4)." >&2
         exit 1
     fi
+    if [[ -n "$SSH_KEY_FILE" && ! -f "$SSH_KEY_FILE" ]]; then
+        echo "File $SSH_KEY_FILE does not exist." >&2
+        exit 1
+    fi
 }
 
 function create_appliance_config() {
@@ -113,7 +120,9 @@ function create_appliance_config() {
     APPLIANCE_WORK_DIR="/tmp/iso_builder/appliance-assets-$full_ocp_version"
     mkdir -p "${APPLIANCE_WORK_DIR}"
 
-    cat << EOF >> ${APPLIANCE_WORK_DIR}/appliance-config.yaml
+    cfg=${APPLIANCE_WORK_DIR}/appliance-config.yaml
+
+    cat << EOF >> ${cfg}  
 apiVersion: v1beta1
 kind: ApplianceConfig
 diskSizeGB: 200
@@ -122,6 +131,15 @@ userCorePass: core
 stopLocalRegistry: false
 enableDefaultSources: false
 enableInteractiveFlow: true
+EOF
+
+    if [[ -n "$SSH_KEY_FILE" ]]; then
+        cat << EOF >> ${cfg} 
+sshKey: '$(cat "${SSH_KEY_FILE}")'
+EOF
+    fi
+
+    cat << EOF >> ${cfg} 
 operators:
   - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
     packages:
@@ -130,7 +148,7 @@ operators:
 EOF
 
     if [ -n "${RELEASE_IMAGE_VERSION}" ]; then
-        cat << EOF >> ${APPLIANCE_WORK_DIR}/appliance-config.yaml
+        cat << EOF >> ${cfg}
 ocpRelease:
   version: $major_minor_patch_version
   channel: candidate
@@ -138,7 +156,7 @@ ocpRelease:
 EOF
     fi
     if [ -n "${RELEASE_IMAGE_URL}" ]; then
-        cat << EOF >> ${APPLIANCE_WORK_DIR}/appliance-config.yaml
+        cat << EOF >> ${cfg}
 ocpRelease:
   version: $major_minor_patch_version
   url: $RELEASE_IMAGE_URL
@@ -191,7 +209,7 @@ function setup_agent_artifacts() {
     local ARTIFACTS_DIR="${WORK_DIR}"/agent-artifacts
     mkdir -p "${ARTIFACTS_DIR}"
 
-    local IMAGE_PULL_SPEC=$(oc adm release info --registry-config="${PULL_SECRET_FILE}" --image-for=agent-installer-utils --filter-by-os=linux/"${osarch}" --insecure=true "${RELEASE_IMAGE_VERSION}")
+    local IMAGE_PULL_SPEC=$(oc adm release info --registry-config="${PULL_SECRET_FILE}" --image-for=agent-installer-utils --filter-by-os=linux/"${osarch}" --insecure=true "${RELEASE_IMAGE_URL}")
     
     local FILES=("/usr/bin/agent-tui" "/usr/lib64/libnmstate.so.*")
     for FILE in "${FILES[@]}"; do
