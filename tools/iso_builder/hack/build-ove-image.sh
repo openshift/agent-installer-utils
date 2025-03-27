@@ -26,13 +26,11 @@ function usage() {
     echo ""
     echo "Optional:"
     echo "  --arch <architecture>          Target CPU architecture (default: x86_64)"
-    echo "  --rendezvousIP <IP>            (Optional) Rendezvous IP for the cluster"
     echo ""
     echo "Examples:"
     echo "$0 --pull-secret-file ~/pull_secret.json --release-image-url registry.ci.openshift.org/ocp/release:4.19.0-0.ci-2025-03-18-173638"
     echo "$0 --pull-secret-file ~/pull_secret.json --ocp-version 4.18.4"
     echo "$0 --pull-secret-file ~/pull_secret.json --ocp-version 4.18.4 --arch x86_64"
-    echo "$0 --pull-secret-file ~/pull_secret.json --ocp-version 4.18.4 --rendezvousIP 192.168.122.2"
     echo "Outputs:"
     echo "  - agent-ove-x86_64.iso: Bootable agent OVE ISO image."
     echo
@@ -60,7 +58,6 @@ function parse_inputs() {
                 RELEASE_IMAGE_VERSION="$2"; shift ;;
             --arch) ARCH="$2"; shift ;;
             --pull-secret-file) PULL_SECRET_FILE="$2"; shift ;;
-            --rendezvousIP) RENDEZVOUS_IP="$2"; shift ;;
             *) 
                 echo "Unknown parameter: $1" >&2
                 exit 1 ;;
@@ -116,7 +113,6 @@ function create_appliance_config() {
     APPLIANCE_WORK_DIR="/tmp/iso_builder/appliance-assets-$full_ocp_version"
     mkdir -p "${APPLIANCE_WORK_DIR}"
 
-# ToDo: Add rendezvousIp: user_specified_rendezvous_ip_address
     cat << EOF >> ${APPLIANCE_WORK_DIR}/appliance-config.yaml
 apiVersion: v1beta1
 kind: ApplianceConfig
@@ -285,7 +281,6 @@ function main()
     RELEASE_IMAGE_VERSION=""
     RELEASE_IMAGE_URL=""
     ARCH=""
-    RENDEZVOUS_IP=""
 
     parse_inputs "$@"
     validate_inputs
