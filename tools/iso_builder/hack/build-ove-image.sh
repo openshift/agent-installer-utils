@@ -227,9 +227,6 @@ function setup_agent_artifacts() {
     sudo rm -rf "${ARTIFACTS_DIR}"/*
     sudo mv "${WORK_DIR}"/agent-artifacts.squashfs "${ARTIFACTS_DIR}"
 
-    # copy the custom script for systemd
-    sudo cp data/ove/data/files/usr/local/bin/setup-agent-tui.sh "${ARTIFACTS_DIR}"/setup-agent-tui.sh
-
     # Copy assisted-installer-ui image to /images dir
     local IMAGE=assisted-install-ui
     local PULL_SPEC=registry.ci.openshift.org/ocp/4.19:"${IMAGE}"
@@ -280,8 +277,25 @@ function update_ignition() {
 EOF
 )
 
+    local encoded_content=$(base64 -w 0 data/ove/data/files/usr/local/bin/setup-agent-tui.sh)
+    local new_file=$(cat <<EOF
+{
+        "group": {},
+        "overwrite": true,
+        "path": "/usr/local/bin/setup-agent-tui.sh",
+        "user": {
+          "name": "root"
+        },
+        "contents": {
+          "source": "data:text/plain;charset=utf-8;base64,$encoded_content",
+          "verification": {}
+        },
+        "mode": 365
+    }
+EOF
+)
     local UPDATED_IGNITION="${WORK_DIR}"/updated_ignition.ign
-    jq ".systemd.units += [$NEW_UNIT]" "${OG_IGNITION}" > "${UPDATED_IGNITION}"
+    jq ".systemd.units += [$NEW_UNIT] | .storage.files += [$new_file]" "${OG_IGNITION}" > "${UPDATED_IGNITION}"
 
     echo "Embedding updated ignition into ISO..."
     coreos-installer iso ignition embed --force -i "${UPDATED_IGNITION}" "${AGENT_OVE_ISO}"
@@ -293,6 +307,7 @@ function cleanup() {
 
 function main()
 {
+    start_time=$(date +%s)
     PULL_SECRET_FILE=""
     RELEASE_IMAGE_VERSION=""
     RELEASE_IMAGE_URL=""
@@ -313,6 +328,12 @@ function main()
     cleanup
 
     echo "Generated agent based installer OVE ISO at: $AGENT_OVE_ISO"
+    end_time=$(date +%s)
+    elapsed_time=$((end_time - start_time))
+    minutes=$((elapsed_time / 60))
+    seconds=$((elapsed_time % 60))
+
+    echo "ISOBuilder execution time: ${minutes}m ${seconds}s" 
 }
 
 [[ $# -lt 3 ]] && usage
