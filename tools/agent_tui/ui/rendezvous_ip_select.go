@@ -4,8 +4,13 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/newt"
 	"github.com/rivo/tview"
+)
+
+const (
+	EMPTY_OPTION = "" // list option used as spacing between IP addresses and <Back> button
 )
 
 func (u *UI) createSelectHostIPPage() {
@@ -15,6 +20,10 @@ func (u *UI) createSelectHostIPPage() {
 	u.selectIPList.SetSelectedTextColor(newt.ColorGray)
 	u.selectIPList.ShowSecondaryText(false)
 	u.selectIPList.SetBorderPadding(0, 0, 2, 2)
+	// only use the custom InputCapture if there are IP addresses
+	if len(u.hostIPAddresses()) > 0 {
+		u.selectIPList.SetInputCapture(getSelectIPListInputCapture(u.selectIPList))
+	}
 
 	descriptionText := fmt.Sprintf("Select an IP address from this node to be the Rendezvous node IP.")
 	textFlex := u.createTextFlex(descriptionText)
@@ -63,27 +72,86 @@ func (u *UI) hostIPAddresses() []string {
 	return append(ipv4, ipv6...)
 }
 
-func (u *UI) refreshSelectIPList() {
-	listSize := u.selectIPList.GetItemCount()
-	for i := 0; i < listSize; i++ {
-		u.selectIPList.RemoveItem(i)
+// This custom InputCapture is used when there are IP addresses.
+// When IP addresses are present, a blank line is added between
+// the IP addresses and the <Back> and <Configure Network> buttons.
+// The InputCapture skips the blank line when navigating the list.
+func getSelectIPListInputCapture(list *tview.List) (capture func(event *tcell.EventKey) *tcell.EventKey) {
+	return func(event *tcell.EventKey) *tcell.EventKey {
+		// List.GetCurrentItem actually returns not the current selected item but the
+		// item that was last selected
+		previousItemIndex := list.GetCurrentItem()
+		previousItem, _ := list.GetItemText(previousItemIndex)
+		currentItem := previousItem
+		updatedItemIndex := previousItemIndex
+		switch event.Key() {
+		case tcell.KeyTab, tcell.KeyDown, tcell.KeyRight:
+			currentItemIndex := previousItemIndex + 1
+			if previousItemIndex == list.GetItemCount()-1 {
+				// reached the bottom of the selectIPList
+				currentItemIndex = 0
+			}
+			currentItem, _ = list.GetItemText(currentItemIndex)
+			if currentItem == EMPTY_OPTION {
+				// move the current index up one place to skip the EMPTY_OPTION
+				updatedItemIndex = currentItemIndex
+				if updatedItemIndex > list.GetItemCount() {
+					// reached the bottom of the list
+					updatedItemIndex = 0
+				}
+				list.SetCurrentItem(updatedItemIndex)
+			}
+		case tcell.KeyBacktab, tcell.KeyUp, tcell.KeyLeft:
+			currentItemIndex := previousItemIndex - 1
+			if currentItemIndex < 0 {
+				// reached the top of the selectIPList
+				currentItemIndex = list.GetItemCount() - 1
+			}
+			currentItem, _ = list.GetItemText(currentItemIndex)
+			if currentItem == EMPTY_OPTION {
+				// move the current index down one place to skip the EMPTY_OPTION
+				updatedItemIndex = currentItemIndex
+				if updatedItemIndex < 0 {
+					updatedItemIndex = list.GetItemCount() - 1
+				}
+				list.SetCurrentItem(updatedItemIndex)
+			}
+		}
+
+		return event
 	}
+}
+
+func (u *UI) refreshSelectIPList() {
+	u.updateSelectIPList(u.hostIPAddresses())
+}
+
+func (u *UI) updateSelectIPList(ipAddresses []string) {
+	u.selectIPList.Clear()
 	backOption := "<Back>"
 	configureNetworkOption := "<Configure Network>"
-	options := append(u.hostIPAddresses(), backOption, configureNetworkOption)
+	options := ipAddresses
+	if len(ipAddresses) > 0 {
+		// only add spacer line if there are IP addresses
+		options = append(options, EMPTY_OPTION)
+	}
+	options = append(options, backOption, configureNetworkOption)
 	for _, selected := range options {
 		u.selectIPList.AddItem(selected, "", rune(0), func() {
-			if selected == backOption {
+			switch selected {
+			case EMPTY_OPTION:
+				// spacing between IP addresses and buttons
+			case backOption:
 				u.setFocusToRendezvousIP()
-			} else if selected == configureNetworkOption {
+			case configureNetworkOption:
 				u.showNMTUIWithErrorDialog(func() {
 					u.refreshSelectIPList()
 					u.setFocusToSelectIP()
 				})
-			} else {
+			default:
 				err := u.saveRendezvousIPAddress(selected)
 				if err != nil {
-					u.ShowErrorDialog(fmt.Sprintf(saveRendezvousIPError, err.Error()))
+					u.ShowRendezvousModal(fmt.Sprintf(saveRendezvousIPError, err.Error()), []string{OK_BUTTON})
 				} else {
 					u.showRendezvousIPSaveSuccessModal(selected, u.setFocusToSelectIP)
 				}

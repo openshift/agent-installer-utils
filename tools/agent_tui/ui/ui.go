@@ -28,7 +28,7 @@ type UI struct {
 	rendezvousIPForm             *tview.Form
 	selectIPForm                 *tview.Form
 	selectIPList                 *tview.List
-	errorModal                   *tview.Modal
+	rendezvousModal              *tview.Modal
 	rendezvousIPFormActive       atomic.Value
 	rendezvousIPSaveSuccessModal *tview.Modal
 
@@ -125,7 +125,7 @@ func (u *UI) create(config checks.Config) {
 	u.createTimeoutModal(config)
 	u.createSplashScreen()
 	u.createRendezvousIPPage(config)
-	u.createErrorModal()
+	u.createRendezvousModal()
 	u.createSelectHostIPPage()
 	u.app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if !u.IsRendezvousIPFormActive() {

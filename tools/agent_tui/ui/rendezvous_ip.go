@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"net"
+	"os/exec"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/checks"
@@ -51,15 +52,15 @@ func (u *UI) createRendezvousIPPage(config checks.Config) {
 			if ipAddress == "" {
 				ipAddress = "<blank>"
 			}
-			u.ShowErrorDialog(fmt.Sprintf(invalidIPText, ipAddress))
-		} else {
-			err := u.saveRendezvousIPAddress(ipAddress)
-			if err != nil {
-				u.ShowErrorDialog(fmt.Sprintf(saveRendezvousIPError, err.Error()))
-			} else {
-				u.showRendezvousIPSaveSuccessModal(ipAddress, u.setFocusToRendezvousIP)
-			}
+			u.ShowRendezvousModal(fmt.Sprintf(invalidIPText, ipAddress), []string{OK_BUTTON})
+			return
 		}
+
+		u.ShowRendezvousModal(fmt.Sprintf(checkingConnectivityText, ipAddress), []string{})
+		connCheckStatus := make(chan string)
+		go u.checkRendezvousIPConnectivityAndDisplayDialog(ipAddress, connCheckStatus)
+		go u.saveRendezvousIPIfConnCheckSuccess(ipAddress, connCheckStatus)
+
 	})
 	u.rendezvousIPForm.SetButtonActivatedStyle(tcell.StyleDefault.Background(newt.ColorRed).
 		Foreground(newt.ColorGray))
@@ -135,4 +136,36 @@ func validateIP(ipAddress string) string {
 		return fmt.Sprintf("%s is not a valid IP address", ipAddress)
 	}
 	return ""
+}
+
+func (u *UI) checkRendezvousIPConnectivityAndDisplayDialog(ipAddress string, connCheckStatus chan string) {
+	stdout, connectivityErr := exec.Command("ping", "-c", "4", ipAddress).CombinedOutput()
+	if connectivityErr != nil {
+		u.logger.Infof("Connectivity check failed %s", fmt.Sprintf(connectivityCheckFailText, ipAddress, stdout))
+		u.app.QueueUpdateDraw(func() {
+			u.ShowRendezvousModal(fmt.Sprintf(connectivityCheckFailText, ipAddress, stdout), []string{OK_BUTTON, CONFIGURE_NETWORK_BUTTON})
+		})
+		connCheckStatus <- "fail"
+		return
+	}
+
+	connCheckStatus <- "connCheckSuccess"
+}
+
+// If there is connectivity to the rendezvous host (ipAddress), the rendezvous IP can be saved.
+func (u *UI) saveRendezvousIPIfConnCheckSuccess(ipAddress string, connCheckStatus chan string) {
+	for message := range connCheckStatus {
+		if message == "connCheckSuccess" {
+			err := u.saveRendezvousIPAddress(ipAddress)
+			u.app.QueueUpdateDraw(func() {
+				if err != nil {
+					u.ShowRendezvousModal(fmt.Sprintf(saveRendezvousIPError, err.Error()), []string{OK_BUTTON})
+				} else {
+					u.showRendezvousIPSaveSuccessModal(ipAddress, u.setFocusToRendezvousIP)
+				}
+			})
+
+		}
+	}
+	close(connCheckStatus)
 }
