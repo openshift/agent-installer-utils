@@ -31,6 +31,7 @@ function usage() {
     echo ""
     echo "Examples:"
     echo "$0 --pull-secret-file ~/pull_secret.json --release-image-url registry.ci.openshift.org/ocp/release:4.19.0-0.ci-2025-03-18-173638"
+    echo "$0 --pull-secret-file ~/pull_secret.json --release-image-url registry.ci.openshift.org/ocp/release@sha256:1a991852031c0a2825c6ae2280bfd2c2b9b4564b59aef14e68b3ece3e47c8448"
     echo "$0 --pull-secret-file ~/pull_secret.json --ocp-version 4.18.4"
     echo "$0 --pull-secret-file ~/pull_secret.json --ocp-version 4.18.4 --arch x86_64"
     echo "Outputs:"
@@ -113,17 +114,15 @@ function setup_vars() {
     fi
     if [ -n "${RELEASE_IMAGE_URL}" ]; then
         echo "Using release image ${RELEASE_IMAGE_URL}"
-        FULL_OCP_VERSION=$(echo "\"$RELEASE_IMAGE_URL\"" | jq -r 'split(":")[1]')
+        FULL_OCP_VERSION=$(skopeo inspect --authfile $PULL_SECRET_FILE docker://$RELEASE_IMAGE_URL | jq -r '.Labels["io.openshift.release"]')
         IMAGE_REF="${RELEASE_IMAGE_URL}"
     fi
+    major_minor_patch_version=$(echo "\"$FULL_OCP_VERSION\"" | jq -r 'split("-")[0]')
+    APPLIANCE_WORK_DIR="/tmp/iso_builder/appliance-assets-$FULL_OCP_VERSION"
 }
 
 function create_appliance_config() {
     echo "Creating appliance config..."
-    
-    local major_minor_patch_version=$(echo "\"$FULL_OCP_VERSION\"" | jq -r 'split("-")[0]')
-
-    APPLIANCE_WORK_DIR="/tmp/iso_builder/appliance-assets-$FULL_OCP_VERSION"
     mkdir -p "${APPLIANCE_WORK_DIR}"
 
     cfg=${APPLIANCE_WORK_DIR}/appliance-config.yaml
