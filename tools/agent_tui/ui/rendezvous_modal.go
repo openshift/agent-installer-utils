@@ -11,7 +11,7 @@ const (
 
 	invalidIPText             = "The IP address %s is not a valid IPv4 or IPv6 address"
 	checkingConnectivityText  = "Checking connectivity to %s"
-	connectivityCheckFailText = "Ping to %s failed, indicating a likely network connectivity issue:\n%s"
+
 	saveRendezvousIPError     = "Error saving rendezvous IP address to /etc/assisted/rendezvous-host.env: %v"
 )
 

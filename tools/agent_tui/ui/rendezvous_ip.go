@@ -57,10 +57,7 @@ func (u *UI) createRendezvousIPPage(config checks.Config) {
 		}
 
 		u.ShowRendezvousModal(fmt.Sprintf(checkingConnectivityText, ipAddress), []string{})
-		connCheckStatus := make(chan string)
-		go u.checkRendezvousIPConnectivityAndDisplayDialog(ipAddress, connCheckStatus)
-		go u.saveRendezvousIPIfConnCheckSuccess(ipAddress, connCheckStatus)
-
+		u.checkConnectivityAndSaveRendezvousIP(ipAddress)
 	})
 	u.rendezvousIPForm.SetButtonActivatedStyle(tcell.StyleDefault.Background(newt.ColorRed).
 		Foreground(newt.ColorGray))
@@ -138,34 +135,23 @@ func validateIP(ipAddress string) string {
 	return ""
 }
 
-func (u *UI) checkRendezvousIPConnectivityAndDisplayDialog(ipAddress string, connCheckStatus chan string) {
-	stdout, connectivityErr := exec.Command("ping", "-c", "4", ipAddress).CombinedOutput()
+func (u *UI) checkConnectivityAndSaveRendezvousIP(ipAddress string) {
+	url := fmt.Sprintf("http://%s:8090/api/assisted-install/v2", ipAddress)
+	connectivtyFailedText := ""
+	stdout, connectivityErr := exec.Command("curl", url).CombinedOutput()
 	if connectivityErr != nil {
-		u.logger.Infof("Connectivity check failed %s", fmt.Sprintf(connectivityCheckFailText, ipAddress, stdout))
+		connectivtyFailedText = fmt.Sprintf(CONNECTIVITY_CHECK_FAIL_TEXT, url)
+		u.logger.Infof("Connectivity check failed: %s: %s", connectivtyFailedText, stdout)
+	}
+
+	err := u.saveRendezvousIPAddress(ipAddress)
+	go func() {
 		u.app.QueueUpdateDraw(func() {
-			u.ShowRendezvousModal(fmt.Sprintf(connectivityCheckFailText, ipAddress, stdout), []string{OK_BUTTON, CONFIGURE_NETWORK_BUTTON})
+			if err != nil {
+				u.ShowRendezvousModal(fmt.Sprintf(saveRendezvousIPError, err.Error()), []string{OK_BUTTON})
+			} else {
+				u.showRendezvousIPSaveSuccessModal(ipAddress, connectivtyFailedText, u.setFocusToRendezvousIP)
+			}
 		})
-		connCheckStatus <- "fail"
-		return
-	}
-
-	connCheckStatus <- "connCheckSuccess"
-}
-
-// If there is connectivity to the rendezvous host (ipAddress), the rendezvous IP can be saved.
-func (u *UI) saveRendezvousIPIfConnCheckSuccess(ipAddress string, connCheckStatus chan string) {
-	for message := range connCheckStatus {
-		if message == "connCheckSuccess" {
-			err := u.saveRendezvousIPAddress(ipAddress)
-			u.app.QueueUpdateDraw(func() {
-				if err != nil {
-					u.ShowRendezvousModal(fmt.Sprintf(saveRendezvousIPError, err.Error()), []string{OK_BUTTON})
-				} else {
-					u.showRendezvousIPSaveSuccessModal(ipAddress, u.setFocusToRendezvousIP)
-				}
-			})
-
-		}
-	}
-	close(connCheckStatus)
+	}()
 }

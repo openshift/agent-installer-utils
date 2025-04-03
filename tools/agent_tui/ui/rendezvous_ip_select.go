@@ -153,7 +153,7 @@ func (u *UI) updateSelectIPList(ipAddresses []string) {
 				if err != nil {
 					u.ShowRendezvousModal(fmt.Sprintf(saveRendezvousIPError, err.Error()), []string{OK_BUTTON})
 				} else {
-					u.showRendezvousIPSaveSuccessModal(selected, u.setFocusToSelectIP)
+					u.showRendezvousIPSaveSuccessModal(selected, "", u.setFocusToSelectIP)
 				}
 			}
 		})
