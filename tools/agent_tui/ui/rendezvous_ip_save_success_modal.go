@@ -11,9 +11,9 @@ const (
 	PAGE_RENDEZVOUS_IP_SAVE_SUCCESS string = "rendezvousIPSaveSuccessPage"
 	BACK_BUTTON                            = "<Back>"
 
-	CONNECTIVITY_CHECK_FAIL_TEXT = "Connectivity check failed.\ncurl %s was unsuccessful.\n Check the rendezvous node has booted and shows the login prompt. Or check your network configuration.\n"
-	successText                  = "Successfully saved %s as the Rendezvous node IP. "
-	otherNodesText               = "Enter %s as the Rendezvous node IP on the other nodes that will form the cluster."
+	CONNECTIVITY_CHECK_FAIL_TEXT_FORMAT = "Connectivity check failed.\ncurl %s was unsuccessful.\n Check the rendezvous node has booted and shows the login prompt. Or check your network configuration.\n"
+	SUCCESS_TEXT_FORMAT                 = "Successfully saved %s as the Rendezvous node IP. "
+	OTHER_NODES_TEXT_FORMAT             = "Enter %s as the Rendezvous node IP on the other nodes that will form the cluster."
 )
 
 func (u *UI) showRendezvousIPSaveSuccessModal(savedIP, connectivityErrorText string, focusForBackButton func()) {
@@ -43,12 +43,12 @@ func (u *UI) showRendezvousIPSaveSuccessModal(savedIP, connectivityErrorText str
 	}
 	u.rendezvousIPSaveSuccessModal.AddButtons(userPromptButtons)
 
-	text := successText
+	text := SUCCESS_TEXT_FORMAT
 	isRendezvousNode := contains(u.hostIPAddresses(), savedIP)
 	if isRendezvousNode {
 		// This node was designated as the Rendezvous node.
 		// Prompt the user to enter the IP on other nodes.
-		text += otherNodesText
+		text += OTHER_NODES_TEXT_FORMAT
 	}
 
 	if connectivityErrorText != "" {

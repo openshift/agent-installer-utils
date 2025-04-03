@@ -52,11 +52,11 @@ func (u *UI) createRendezvousIPPage(config checks.Config) {
 			if ipAddress == "" {
 				ipAddress = "<blank>"
 			}
-			u.ShowRendezvousModal(fmt.Sprintf(invalidIPText, ipAddress), []string{OK_BUTTON})
+			u.ShowRendezvousModal(fmt.Sprintf(INVALID_IP_TEXT_FORMAT, ipAddress), []string{OK_BUTTON})
 			return
 		}
 
-		u.ShowRendezvousModal(fmt.Sprintf(checkingConnectivityText, ipAddress), []string{})
+		u.ShowRendezvousModal(fmt.Sprintf(CHECKING_CONNECTIVITY_TEXT_FORMAT, ipAddress), []string{})
 		u.checkConnectivityAndSaveRendezvousIP(ipAddress)
 	})
 	u.rendezvousIPForm.SetButtonActivatedStyle(tcell.StyleDefault.Background(newt.ColorRed).
@@ -140,7 +140,7 @@ func (u *UI) checkConnectivityAndSaveRendezvousIP(ipAddress string) {
 	connectivtyFailedText := ""
 	stdout, connectivityErr := exec.Command("curl", url).CombinedOutput()
 	if connectivityErr != nil {
-		connectivtyFailedText = fmt.Sprintf(CONNECTIVITY_CHECK_FAIL_TEXT, url)
+		connectivtyFailedText = fmt.Sprintf(CONNECTIVITY_CHECK_FAIL_TEXT_FORMAT, url)
 		u.logger.Infof("Connectivity check failed: %s: %s", connectivtyFailedText, stdout)
 	}
 
@@ -148,7 +148,7 @@ func (u *UI) checkConnectivityAndSaveRendezvousIP(ipAddress string) {
 	go func() {
 		u.app.QueueUpdateDraw(func() {
 			if err != nil {
-				u.ShowRendezvousModal(fmt.Sprintf(saveRendezvousIPError, err.Error()), []string{OK_BUTTON})
+				u.ShowRendezvousModal(fmt.Sprintf(SAVE_RENDEZVOUS_IP_ERROR_FORMAT, err.Error()), []string{OK_BUTTON})
 			} else {
 				u.showRendezvousIPSaveSuccessModal(ipAddress, connectivtyFailedText, u.setFocusToRendezvousIP)
 			}

@@ -9,10 +9,9 @@ const (
 	OK_BUTTON             = "<Ok>"
 	PAGE_RENDEZVOUS_MODAL = "rendezvousModal"
 
-	invalidIPText             = "The IP address %s is not a valid IPv4 or IPv6 address"
-	checkingConnectivityText  = "Checking connectivity to %s"
-
-	saveRendezvousIPError     = "Error saving rendezvous IP address to /etc/assisted/rendezvous-host.env: %v"
+	INVALID_IP_TEXT_FORMAT            = "The IP address %s is not a valid IPv4 or IPv6 address"
+	CHECKING_CONNECTIVITY_TEXT_FORMAT = "Checking connectivity to %s"
+	SAVE_RENDEZVOUS_IP_ERROR_FORMAT   = "Error saving rendezvous IP address to /etc/assisted/rendezvous-host.env: %v"
 )
 
 // A generic modal used for Rendezvous IP confirmations
