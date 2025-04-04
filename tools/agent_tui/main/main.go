@@ -29,27 +29,27 @@ func main() {
 		logPath = "/tmp/agent_tui.log"
 		fmt.Printf("AGENT_TUI_LOG_PATH is unspecified, logging to: %v\n", logPath)
 	}
+	rendezvousIP, workflowType := getRendezvousHostEnv()
 	config := checks.Config{
 		ReleaseImageURL: releaseImage,
 		LogPath:         logPath,
+		WorkflowType:    workflowType,
 	}
-	agent_tui.App(nil, getRendezvousIP(), config)
+	agent_tui.App(nil, rendezvousIP, config)
 }
 
-// The rendezvous IP address can be passed into AGENT_TUI
-// through the NODE_ZERO_IP environment variable.
-// If NODE_ZERO_IP is unset through the environment variable,
-// then this function reads /etc/assisted/rendezvous-host.env
-// for the value..
-func getRendezvousIP() string {
+// This function reads /etc/assisted/rendezvous-host.env
+// for NODE_ZERO_IP and WORKFLOY_TYPE.
+func getRendezvousHostEnv() (nodeZeroIP, workflowType string) {
 	envMap, err := godotenv.Read(ui.RENDEZVOUS_HOST_ENV_PATH)
 	if err != nil {
-		return ""
+		return "", ""
 	}
-	nodeZeroIP := envMap["NODE_ZERO_IP"]
+	nodeZeroIP = envMap["NODE_ZERO_IP"]
 	if nodeZeroIP == RENDEZVOUS_IP_TEMPLATE_VALUE {
-		return ""
+		nodeZeroIP = ""
 	}
+	workflowType = envMap["WORKFLOW_TYPE"]
 
-	return nodeZeroIP
+	return nodeZeroIP, workflowType
 }
