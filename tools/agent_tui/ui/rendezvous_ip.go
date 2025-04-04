@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"net"
+	"os/exec"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/checks"
@@ -51,15 +52,12 @@ func (u *UI) createRendezvousIPPage(config checks.Config) {
 			if ipAddress == "" {
 				ipAddress = "<blank>"
 			}
-			u.ShowErrorDialog(fmt.Sprintf(invalidIPText, ipAddress))
-		} else {
-			err := u.saveRendezvousIPAddress(ipAddress)
-			if err != nil {
-				u.ShowErrorDialog(fmt.Sprintf(saveRendezvousIPError, err.Error()))
-			} else {
-				u.showRendezvousIPSaveSuccessModal(ipAddress, u.setFocusToRendezvousIP)
-			}
+			u.ShowRendezvousModal(fmt.Sprintf(INVALID_IP_TEXT_FORMAT, ipAddress), []string{OK_BUTTON})
+			return
 		}
+
+		u.ShowRendezvousModal(fmt.Sprintf(CHECKING_CONNECTIVITY_TEXT_FORMAT, ipAddress), []string{})
+		u.checkConnectivityAndSaveRendezvousIP(ipAddress)
 	})
 	u.rendezvousIPForm.SetButtonActivatedStyle(tcell.StyleDefault.Background(newt.ColorRed).
 		Foreground(newt.ColorGray))
@@ -135,4 +133,25 @@ func validateIP(ipAddress string) string {
 		return fmt.Sprintf("%s is not a valid IP address", ipAddress)
 	}
 	return ""
+}
+
+func (u *UI) checkConnectivityAndSaveRendezvousIP(ipAddress string) {
+	url := fmt.Sprintf("http://%s:8090/api/assisted-install/v2", ipAddress)
+	connectivtyFailedText := ""
+	stdout, connectivityErr := exec.Command("curl", url).CombinedOutput()
+	if connectivityErr != nil {
+		connectivtyFailedText = fmt.Sprintf(CONNECTIVITY_CHECK_FAIL_TEXT_FORMAT, url)
+		u.logger.Infof("Connectivity check failed: %s: %s", connectivtyFailedText, stdout)
+	}
+
+	err := u.saveRendezvousIPAddress(ipAddress)
+	go func() {
+		u.app.QueueUpdateDraw(func() {
+			if err != nil {
+				u.ShowRendezvousModal(fmt.Sprintf(SAVE_RENDEZVOUS_IP_ERROR_FORMAT, err.Error()), []string{OK_BUTTON})
+			} else {
+				u.showRendezvousIPSaveSuccessModal(ipAddress, connectivtyFailedText, u.setFocusToRendezvousIP)
+			}
+		})
+	}()
 }

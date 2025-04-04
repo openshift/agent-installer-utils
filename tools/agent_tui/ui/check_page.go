@@ -11,11 +11,11 @@ import (
 )
 
 const (
-	CONFIGURE_NETWORK_LABEL string = "Configure Networking"
-	RELEASE_IMAGE_LABEL     string = "Release Image"
-	CONFIGURE_BUTTON        string = "<Configure network>"
-	QUIT_BUTTON             string = "<Quit>"
-	PAGE_CHECKSCREEN        string = "checkScreen"
+	CONFIGURE_NETWORK_LABEL  string = "Configure Networking"
+	RELEASE_IMAGE_LABEL      string = "Release Image"
+	CONFIGURE_NETWORK_BUTTON string = "<Configure Network>"
+	QUIT_BUTTON              string = "<Quit>"
+	PAGE_CHECKSCREEN         string = "checkScreen"
 
 	mainFlexHeight            = 10
 	mainFlexWithDetailsHeight = 30
@@ -131,7 +131,7 @@ func (u *UI) createCheckPage(config checks.Config) {
 	u.netConfigForm.SetBorder(false)
 	u.netConfigForm.SetBackgroundColor(newt.ColorGray)
 	u.netConfigForm.SetButtonsAlign(tview.AlignCenter)
-	u.netConfigForm.AddButton(CONFIGURE_BUTTON, func() {
+	u.netConfigForm.AddButton(CONFIGURE_NETWORK_BUTTON, func() {
 		u.showNMTUIWithErrorDialog(u.setFocusToChecks)
 	})
 	u.netConfigForm.AddButton(QUIT_BUTTON, func() {
