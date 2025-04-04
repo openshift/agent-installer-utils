@@ -38,7 +38,7 @@ func main() {
 	agent_tui.App(nil, rendezvousIP, config)
 }
 
-// Tis function reads /etc/assisted/rendezvous-host.env
+// This function reads /etc/assisted/rendezvous-host.env
 // for NODE_ZERO_IP and WORKFLOY_TYPE.
 func getRendezvousHostEnv() (nodeZeroIP, workflowType string) {
 	envMap, err := godotenv.Read(ui.RENDEZVOUS_HOST_ENV_PATH)
