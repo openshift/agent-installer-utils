@@ -150,6 +150,11 @@ operators:
     packages:
       - name: mtv-operator
       - name: kubernetes-nmstate-operator
+      - name: node-healthcheck-operator
+      - name: node-maintenance-operator
+      - name: fence-agents-remediation
+      - name: self-node-remediation
+      - name: cluster-kube-descheduler-operator
 EOF
 
     if [ -n "${RELEASE_IMAGE_VERSION}" ]; then
