@@ -13,6 +13,8 @@ const (
 	CheckTypeReleaseImageHostDNS  = "ReleaseImageHostDNS"
 	CheckTypeReleaseImageHostPing = "ReleaseImageHostPing"
 	CheckTypeReleaseImageHttp     = "ReleaseImageHttp"
+
+	WORKFLOW_TYPE_INSTALL_INTERACTIVE_DISCONNECTED = "install-interactive-disconnected"
 )
 
 type Config struct {
@@ -93,12 +95,10 @@ var defaultCheckFunctions = CheckFunctions{
 func NewEngine(c chan CheckResult, config Config, logger *logrus.Logger, checkFuncs ...CheckFunctions) *Engine {
 	checks := []*Check{}
 
-	switch config.WorkflowType {
-	case "install-interactive-disconnected":
-		// The install-interactive-disconnected workflow has the release image
-		// contents included in its live ISO. Checking release image
-		// connectivity is not needed.
-	default:
+	// The install-interactive-disconnected workflow has the release image
+	// contents included in its live ISO. Checking release image
+	// connectivity is not needed.
+	if config.WorkflowType != WORKFLOW_TYPE_INSTALL_INTERACTIVE_DISCONNECTED {
 		cf := defaultCheckFunctions
 		if len(checkFuncs) > 0 {
 			cf = checkFuncs[0]
