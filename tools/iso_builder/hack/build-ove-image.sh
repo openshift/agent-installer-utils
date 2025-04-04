@@ -7,6 +7,11 @@ LOGDIR=/tmp/iso_builder/logs
 source $SCRIPTDIR/logging.sh
 
 export SSH_KEY_FILE=""
+export PULL_SECRET_FILE=""
+export RELEASE_IMAGE_VERSION=""
+export RELEASE_IMAGE_URL=""
+export ARCH=""
+export DIR_PATH=""
 
 function usage() {
     echo "----------------------------------------------------------------------------------------------------------------------"
@@ -15,6 +20,7 @@ function usage() {
     echo "This script generates 'agent-ove-<arch>.iso' in the 'ove-assets' directory."
     echo "If the 'ove-assets' directory doesn't exist, it will be created at the current location."
     echo "The default architecture is x86_64."
+    echo "The default directory path is /tmp/iso_builder.\n"
     echo
     echo "Usage:"
     echo "  ./hack/build-ove-image.sh [OPTIONS]"
@@ -28,18 +34,23 @@ function usage() {
     echo ""
     echo "Optional:"
     echo "  --arch <architecture>          Target CPU architecture (default: x86_64)"
+    echo "  --dir <path>                   Path for ISOBuilder assets (default: /tmp/iso_builder)"
     echo ""
     echo "Examples:"
     echo "$0 --pull-secret-file ~/pull_secret.json --release-image-url registry.ci.openshift.org/ocp/release:4.19.0-0.ci-2025-03-18-173638"
     echo "$0 --pull-secret-file ~/pull_secret.json --release-image-url registry.ci.openshift.org/ocp/release@sha256:1a991852031c0a2825c6ae2280bfd2c2b9b4564b59aef14e68b3ece3e47c8448"
     echo "$0 --pull-secret-file ~/pull_secret.json --ocp-version 4.18.4"
-    echo "$0 --pull-secret-file ~/pull_secret.json --ocp-version 4.18.4 --arch x86_64"
+    echo "$0 --pull-secret-file ~/pull_secret.json --ocp-version 4.18.4 --arch x86_64 --dir ~/iso_builder"
     echo "Outputs:"
     echo "  - agent-ove-x86_64.iso: Bootable agent OVE ISO image."
     echo
-    echo "Directory structure after running the script:"
+    echo "Directory Structure After Running the Script:"
+    echo " When no directory location is specified:"
     echo "  ./ove-assets/"
     echo "  └── agent-ove-x86_64.iso"
+    echo " When a directory location is specified (e.g., --dir ~/iso_builder)"
+    echo "~/iso_builder/"
+    echo "    └── agent-ove-x86_64.iso"
     echo "----------------------------------------------------------------------------------------------------------------------"
     exit 1
 }
@@ -62,6 +73,7 @@ function parse_inputs() {
             --arch) ARCH="$2"; shift ;;
             --pull-secret-file) PULL_SECRET_FILE="$2"; shift ;;
             --ssh-key-file) SSH_KEY_FILE="$2"; shift ;;
+            --dir) DIR_PATH="$2"; shift ;;
             *) 
                 echo "Unknown parameter: $1" >&2
                 exit 1 ;;
@@ -102,6 +114,13 @@ function validate_inputs() {
         echo "File $SSH_KEY_FILE does not exist." >&2
         exit 1
     fi
+
+    if [[ -z "${DIR_PATH:-}" ]]; then
+        DIR_PATH="/tmp/iso_builder"
+        echo "Directory path not specified. Using default location: $DIR_PATH."
+    else
+        echo "ISOBuilder assets will be stored in: $DIR_PATH."
+    fi
 }
 
 function setup_vars() {
@@ -118,7 +137,7 @@ function setup_vars() {
         IMAGE_REF="${RELEASE_IMAGE_URL}"
     fi
     major_minor_patch_version=$(echo "\"$FULL_OCP_VERSION\"" | jq -r 'split("-")[0]')
-    APPLIANCE_WORK_DIR="/tmp/iso_builder/appliance-assets-$FULL_OCP_VERSION"
+    APPLIANCE_WORK_DIR="$DIR_PATH/appliance-assets-$FULL_OCP_VERSION"
 }
 
 function create_appliance_config() {
@@ -183,7 +202,7 @@ function build_live_iso() {
 function extract_live_iso() {
     echo "Extracting ISO contents..."
 
-    local READ_DIR="/tmp/iso_builder/appliance"
+    local READ_DIR="$DIR_PATH/appliance"
     mkdir -p "${READ_DIR}"
 
     if [ ! -f "${APPLIANCE_WORK_DIR}"/appliance.iso ]; then
@@ -328,7 +347,7 @@ function main()
     validate_inputs
     setup_vars
 
-    WORK_DIR="/tmp/iso_builder/ove-iso"
+    WORK_DIR="$DIR_PATH/ove-iso"
     mkdir -p "${WORK_DIR}"
 
     if [ "$(id -u)" -eq 0 ]; then
@@ -354,5 +373,5 @@ function main()
     echo "ISOBuilder execution time: ${minutes}m ${seconds}s" 
 }
 
-[[ $# -lt 3 ]] && usage
+[[ $# -lt 2 ]] && usage
 main "$@"
