@@ -151,7 +151,7 @@ func (u *UI) updateSelectIPList(ipAddresses []string) {
 			default:
 				err := u.saveRendezvousIPAddress(selected)
 				if err != nil {
-					u.showRendezvousModal(fmt.Sprintf(SAVE_RENDEZVOUS_IP_ERROR_FORMAT, err.Error()), []string{OK_BUTTON})
+					u.showRendezvousModal(fmt.Sprintf(SAVE_RENDEZVOUS_IP_ERROR_FORMAT, err.Error()), []string{BACK_BUTTON})
 				} else {
 					u.showRendezvousIPSaveSuccessModal(selected, u.setFocusToSelectIP)
 				}

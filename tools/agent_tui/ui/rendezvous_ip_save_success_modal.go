@@ -9,11 +9,11 @@ import (
 
 const (
 	PAGE_RENDEZVOUS_IP_SAVE_SUCCESS string = "rendezvousIPSaveSuccessPage"
-	OK_BUTTON                              = "<Ok>"
+	CONTINUE_BUTTON                        = "<Continue>"
 	BACK_BUTTON                            = "<Back>"
 
-	SUCCESS_TEXT_FORMAT                 = "Successfully saved %s as the Rendezvous node IP. "
-	OTHER_NODES_TEXT_FORMAT             = "Enter %s as the Rendezvous node IP on the other nodes that will form the cluster."
+	SUCCESS_TEXT_FORMAT     = "Successfully saved %s as the Rendezvous node IP. "
+	OTHER_NODES_TEXT_FORMAT = "Enter %s as the Rendezvous node IP on the other nodes that will form the cluster."
 )
 
 func (u *UI) showRendezvousIPSaveSuccessModal(savedIP string, focusForBackButton func()) {
@@ -21,7 +21,7 @@ func (u *UI) showRendezvousIPSaveSuccessModal(savedIP string, focusForBackButton
 	// like to change their network configuration.
 	u.rendezvousIPSaveSuccessModal = tview.NewModal()
 	u.rendezvousIPSaveSuccessModal.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-		if buttonLabel == OK_BUTTON {
+		if buttonLabel == CONTINUE_BUTTON {
 			u.app.Stop()
 		}
 		if buttonLabel == BACK_BUTTON {
@@ -37,7 +37,7 @@ func (u *UI) showRendezvousIPSaveSuccessModal(savedIP string, focusForBackButton
 	u.rendezvousIPSaveSuccessModal.
 		SetButtonBackgroundColor(newt.ColorGray).
 		SetButtonTextColor(newt.ColorRed)
-	userPromptButtons := []string{OK_BUTTON, BACK_BUTTON}
+	userPromptButtons := []string{CONTINUE_BUTTON, BACK_BUTTON}
 	u.rendezvousIPSaveSuccessModal.AddButtons(userPromptButtons)
 
 	text := SUCCESS_TEXT_FORMAT

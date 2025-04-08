@@ -20,7 +20,7 @@ func (u *UI) createRendezvousModal() {
 	u.rendezvousModal = tview.NewModal().
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			switch buttonLabel {
-			case OK_BUTTON, BACK_BUTTON:
+			case CONTINUE_BUTTON, BACK_BUTTON:
 				u.setFocusToRendezvousIP()
 			case CONFIGURE_NETWORK_BUTTON:
 				u.ShowNMTUI()
