@@ -31,6 +31,7 @@ type UI struct {
 	rendezvousModal              *tview.Modal
 	rendezvousIPFormActive       atomic.Value
 	rendezvousIPSaveSuccessModal *tview.Modal
+	connectivityFailModal        *tview.Modal
 
 	focusableItems []tview.Primitive // the list of widgets that can be focused
 	focusedItem    int               // the current focused widget

@@ -6,7 +6,6 @@ import (
 )
 
 const (
-	OK_BUTTON             = "<Ok>"
 	PAGE_RENDEZVOUS_MODAL = "rendezvousModal"
 
 	INVALID_IP_TEXT_FORMAT            = "The IP address %s is not a valid IPv4 or IPv6 address"
@@ -21,7 +20,7 @@ func (u *UI) createRendezvousModal() {
 	u.rendezvousModal = tview.NewModal().
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			switch buttonLabel {
-			case OK_BUTTON:
+			case OK_BUTTON, BACK_BUTTON:
 				u.setFocusToRendezvousIP()
 			case CONFIGURE_NETWORK_BUTTON:
 				u.ShowNMTUI()
@@ -38,7 +37,7 @@ func (u *UI) createRendezvousModal() {
 	u.pages.AddPage(PAGE_RENDEZVOUS_MODAL, u.rendezvousModal, true, false)
 }
 
-func (u *UI) ShowRendezvousModal(text string, buttons []string) {
+func (u *UI) showRendezvousModal(text string, buttons []string) {
 	u.rendezvousModal.ClearButtons()
 	u.rendezvousModal.AddButtons(buttons)
 	u.rendezvousModal.SetText(text)

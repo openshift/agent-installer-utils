@@ -9,14 +9,14 @@ import (
 
 const (
 	PAGE_RENDEZVOUS_IP_SAVE_SUCCESS string = "rendezvousIPSaveSuccessPage"
+	OK_BUTTON                              = "<Ok>"
 	BACK_BUTTON                            = "<Back>"
 
-	CONNECTIVITY_CHECK_FAIL_TEXT_FORMAT = "Connectivity check failed.\ncurl %s was unsuccessful.\n Check the rendezvous node has booted and shows the login prompt. Or check your network configuration.\n"
 	SUCCESS_TEXT_FORMAT                 = "Successfully saved %s as the Rendezvous node IP. "
 	OTHER_NODES_TEXT_FORMAT             = "Enter %s as the Rendezvous node IP on the other nodes that will form the cluster."
 )
 
-func (u *UI) showRendezvousIPSaveSuccessModal(savedIP, connectivityErrorText string, focusForBackButton func()) {
+func (u *UI) showRendezvousIPSaveSuccessModal(savedIP string, focusForBackButton func()) {
 	// view is the modal asking the user if they would still
 	// like to change their network configuration.
 	u.rendezvousIPSaveSuccessModal = tview.NewModal()
@@ -38,9 +38,6 @@ func (u *UI) showRendezvousIPSaveSuccessModal(savedIP, connectivityErrorText str
 		SetButtonBackgroundColor(newt.ColorGray).
 		SetButtonTextColor(newt.ColorRed)
 	userPromptButtons := []string{OK_BUTTON, BACK_BUTTON}
-	if connectivityErrorText != "" {
-		userPromptButtons = append(userPromptButtons, CONFIGURE_NETWORK_BUTTON)
-	}
 	u.rendezvousIPSaveSuccessModal.AddButtons(userPromptButtons)
 
 	text := SUCCESS_TEXT_FORMAT
@@ -49,13 +46,6 @@ func (u *UI) showRendezvousIPSaveSuccessModal(savedIP, connectivityErrorText str
 		// This node was designated as the Rendezvous node.
 		// Prompt the user to enter the IP on other nodes.
 		text += OTHER_NODES_TEXT_FORMAT
-	}
-
-	if connectivityErrorText != "" {
-		text += "\n\n" + connectivityErrorText
-	}
-
-	if isRendezvousNode {
 		u.rendezvousIPSaveSuccessModal.SetText(fmt.Sprintf(text, savedIP, savedIP))
 	} else {
 		u.rendezvousIPSaveSuccessModal.SetText(fmt.Sprintf(text, savedIP))
