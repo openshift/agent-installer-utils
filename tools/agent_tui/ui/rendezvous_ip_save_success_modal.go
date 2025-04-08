@@ -12,8 +12,8 @@ const (
 	CONTINUE_BUTTON                        = "<Continue>"
 	BACK_BUTTON                            = "<Back>"
 
-	SUCCESS_TEXT_FORMAT     = "Successfully saved %s as the Rendezvous node IP. "
-	OTHER_NODES_TEXT_FORMAT = "Enter %s as the Rendezvous node IP on the other nodes that will form the cluster."
+	SUCCESS_TEXT_FORMAT     = "Successfully saved %s as the rendezvous node IP. "
+	OTHER_NODES_TEXT_FORMAT = "Enter %s as the rendezvous node IP on the other nodes that will form the cluster."
 )
 
 func (u *UI) showRendezvousIPSaveSuccessModal(savedIP string, focusForBackButton func()) {

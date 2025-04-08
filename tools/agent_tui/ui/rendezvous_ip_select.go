@@ -25,7 +25,7 @@ func (u *UI) createSelectHostIPPage() {
 		u.selectIPList.SetInputCapture(getSelectIPListInputCapture(u.selectIPList))
 	}
 
-	descriptionText := fmt.Sprintf("Select an IP address from this node to be the Rendezvous node IP.")
+	descriptionText := fmt.Sprintf("Select an IP address from this node to be the rendezvous node IP.")
 	textFlex := u.createTextFlex(descriptionText)
 	textRows := 3
 
@@ -33,7 +33,7 @@ func (u *UI) createSelectHostIPPage() {
 		SetDirection(tview.FlexRow).
 		AddItem(textFlex, textRows, 0, false).
 		AddItem(u.selectIPList, u.selectIPList.GetItemCount()+1, 0, false)
-	mainFlex.SetTitle("  Rendezvous Node IP Selection  ").
+	mainFlex.SetTitle("  Rendezvous node IP selection  ").
 		SetTitleColor(newt.ColorRed).
 		SetBorder(true)
 
