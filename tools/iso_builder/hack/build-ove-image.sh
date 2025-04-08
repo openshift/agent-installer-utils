@@ -26,7 +26,6 @@ function create_appliance_config() {
     mkdir -p "${appliance_work_dir}"
     if [ ! -f "${appliance_work_dir}"/appliance-config.yaml ]; then
         echo "Creating appliance config..."
-        local major_minor_patch_version=$(echo "\"$full_ocp_version\"" | jq -r 'split("-")[0]')
         cfg=${appliance_work_dir}/appliance-config.yaml
         cat << EOF >> ${cfg}  
 apiVersion: v1beta1
@@ -112,8 +111,9 @@ function extract_live_iso() {
     else
         mkdir -p "${work_dir}"
         echo "Copying extracted appliance ISO contents to a writable directory."
-        sudo rsync -aH --info=progress2 "${appliance_mnt_dir}/" "${work_dir}/"
-        sudo chown -R $(whoami):$(whoami) "${work_dir}/"
+        $SUDO rsync -aH --info=progress2 "${appliance_mnt_dir}/" "${work_dir}/"
+        $SUDO chown -R $(whoami):$(whoami) "${work_dir}/"
+        $SUDO umount ${appliance_mnt_dir}
     fi
     volume_label=$(isoinfo -d -i "${appliance_work_dir}"/appliance.iso | grep "Volume id:" | cut -d' ' -f3-)
 }
