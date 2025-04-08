@@ -15,8 +15,8 @@ const (
 	PAGE_RENDEZVOUS_IP          = "rendezvousIPScreen"
 	PAGE_SET_NODE_AS_RENDEZVOUS = "setNodeAsRendezvousScreen"
 	FIELD_ENTER_RENDEZVOUS_IP   = "Rendezvous IP"
-	SAVE_RENDEZVOUS_IP_BUTTON   = "<Save Rendezvous IP>"
-	SELECT_IP_ADDRESS_BUTTON    = "<Designate this node as the Rendezvous node by selecting one of its IPs>"
+	SAVE_RENDEZVOUS_IP_BUTTON   = "<Save rendezvous IP>"
+	SELECT_IP_ADDRESS_BUTTON    = "<This is the rendezvous node>"
 	RENDEZVOUS_HOST_ENV_PATH    = "/etc/assisted/rendezvous-host.env"
 )
 
@@ -37,9 +37,9 @@ func (u *UI) createRendezvousIPPage(config checks.Config) {
 	u.rendezvousIPForm.SetBorder(false)
 	u.rendezvousIPForm.SetButtonsAlign(tview.AlignCenter)
 
-	rendezvousIPFormDescription := "Enter the Rendezvous node's IP address if one has been designated."
+	rendezvousIPFormDescription := "The rendezvous node will be the one managing your cluster installation and where you'll be able to configure all cluster settings.\n\n\n\nI've already obtained the rendezvous IP from another node."
 	rendezvousTextFlex := u.createTextFlex(rendezvousIPFormDescription)
-	rendezvousTextNumRows := 3
+	rendezvousTextNumRows := 8
 
 	u.rendezvousIPForm.AddInputField(FIELD_ENTER_RENDEZVOUS_IP, "", 55, nil, nil)
 	u.rendezvousIPForm.SetFieldTextColor(newt.ColorGray)
@@ -68,8 +68,8 @@ func (u *UI) createRendezvousIPPage(config checks.Config) {
 	u.rendezvousIPForm.SetButtonStyle(tcell.StyleDefault.Background(newt.ColorGray).
 		Foreground(newt.ColorBlack))
 
-	selectFormDescription := "----------------------------------- or ------------------------------------\n\n"
-	selectTextFlex := u.createTextFlex(selectFormDescription)
+	orDivider := "                                    or                                    \n\n"
+	selectTextFlex := u.createTextFlex(orDivider)
 	selectTextNumRows := 3
 
 	u.selectIPForm = tview.NewForm()
@@ -90,7 +90,7 @@ func (u *UI) createRendezvousIPPage(config checks.Config) {
 		AddItem(u.rendezvousIPForm, 5, 0, false).
 		AddItem(selectTextFlex, selectTextNumRows, 0, false).
 		AddItem(u.selectIPForm, 4, 0, false)
-	mainFlex.SetTitle("  Rendezvous Node IP Setup  ").
+	mainFlex.SetTitle("  Rendezvous node setup  ").
 		SetTitleColor(newt.ColorRed).
 		SetBorder(true)
 
