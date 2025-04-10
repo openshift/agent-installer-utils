@@ -37,6 +37,8 @@ userCorePass: core
 stopLocalRegistry: false
 enableDefaultSources: false
 enableInteractiveFlow: true
+imageRegistry:
+  uri: quay.io/libpod/registry:2.8
 EOF
 
         if [[ -n "$SSH_KEY_FILE" ]]; then
