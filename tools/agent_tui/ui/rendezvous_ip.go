@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"net"
+	"os/exec"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/checks"
@@ -14,8 +15,8 @@ const (
 	PAGE_RENDEZVOUS_IP          = "rendezvousIPScreen"
 	PAGE_SET_NODE_AS_RENDEZVOUS = "setNodeAsRendezvousScreen"
 	FIELD_ENTER_RENDEZVOUS_IP   = "Rendezvous IP"
-	SAVE_RENDEZVOUS_IP_BUTTON   = "<Save Rendezvous IP>"
-	SELECT_IP_ADDRESS_BUTTON    = "<Designate this node as the Rendezvous node by selecting one of its IPs>"
+	SAVE_RENDEZVOUS_IP_BUTTON   = "<Save rendezvous IP>"
+	SELECT_IP_ADDRESS_BUTTON    = "<This is the rendezvous node>"
 	RENDEZVOUS_HOST_ENV_PATH    = "/etc/assisted/rendezvous-host.env"
 )
 
@@ -36,9 +37,9 @@ func (u *UI) createRendezvousIPPage(config checks.Config) {
 	u.rendezvousIPForm.SetBorder(false)
 	u.rendezvousIPForm.SetButtonsAlign(tview.AlignCenter)
 
-	rendezvousIPFormDescription := "Enter the Rendezvous node's IP address if one has been designated."
+	rendezvousIPFormDescription := "The rendezvous node will be the one managing your cluster installation and where you'll be able to configure all cluster settings.\n\n\n\nI've already obtained the rendezvous IP from another node."
 	rendezvousTextFlex := u.createTextFlex(rendezvousIPFormDescription)
-	rendezvousTextNumRows := 3
+	rendezvousTextNumRows := 8
 
 	u.rendezvousIPForm.AddInputField(FIELD_ENTER_RENDEZVOUS_IP, "", 55, nil, nil)
 	u.rendezvousIPForm.SetFieldTextColor(newt.ColorGray)
@@ -51,23 +52,24 @@ func (u *UI) createRendezvousIPPage(config checks.Config) {
 			if ipAddress == "" {
 				ipAddress = "<blank>"
 			}
-			u.ShowErrorDialog(fmt.Sprintf(invalidIPText, ipAddress))
-		} else {
-			err := u.saveRendezvousIPAddress(ipAddress)
-			if err != nil {
-				u.ShowErrorDialog(fmt.Sprintf(saveRendezvousIPError, err.Error()))
-			} else {
-				u.showRendezvousIPSaveSuccessModal(ipAddress, u.setFocusToRendezvousIP)
-			}
+			u.showRendezvousModal(fmt.Sprintf(INVALID_IP_TEXT_FORMAT, ipAddress), []string{BACK_BUTTON})
+			return
 		}
+
+		u.showRendezvousModal(fmt.Sprintf(CHECKING_CONNECTIVITY_TEXT_FORMAT, ipAddress), []string{})
+
+		// run the connectivity check in a goroutine in the background
+		// because the "Checking connectivity" modal is displayed only
+		// after this function returns.
+		go u.displayModalAfterConnectivityCheck(ipAddress)
 	})
 	u.rendezvousIPForm.SetButtonActivatedStyle(tcell.StyleDefault.Background(newt.ColorRed).
 		Foreground(newt.ColorGray))
 	u.rendezvousIPForm.SetButtonStyle(tcell.StyleDefault.Background(newt.ColorGray).
 		Foreground(newt.ColorBlack))
 
-	selectFormDescription := "----------------------------------- or ------------------------------------\n\n"
-	selectTextFlex := u.createTextFlex(selectFormDescription)
+	orDivider := "                                    or                                    \n\n"
+	selectTextFlex := u.createTextFlex(orDivider)
 	selectTextNumRows := 3
 
 	u.selectIPForm = tview.NewForm()
@@ -88,7 +90,7 @@ func (u *UI) createRendezvousIPPage(config checks.Config) {
 		AddItem(u.rendezvousIPForm, 5, 0, false).
 		AddItem(selectTextFlex, selectTextNumRows, 0, false).
 		AddItem(u.selectIPForm, 4, 0, false)
-	mainFlex.SetTitle("  Rendezvous Node IP Setup  ").
+	mainFlex.SetTitle("  Rendezvous node setup  ").
 		SetTitleColor(newt.ColorRed).
 		SetBorder(true)
 
@@ -135,4 +137,45 @@ func validateIP(ipAddress string) string {
 		return fmt.Sprintf("%s is not a valid IP address", ipAddress)
 	}
 	return ""
+}
+
+func (u *UI) checkConnectivity(ipAddress string) bool {
+	url := fmt.Sprintf("http://%s:8090/api/assisted-install/v2", ipAddress)
+	connectivtyFailedText := ""
+	stdout, connectivityErr := exec.Command("curl", "-m 1", url).CombinedOutput()
+	if connectivityErr != nil {
+		connectivtyFailedText = CONNECTIVITY_CHECK_FAIL_TEXT_FORMAT
+		u.logger.Infof("Connectivity check failed: %s: %s", connectivtyFailedText, stdout)
+		return false
+	}
+
+	u.logger.Infof("has connectivity to %s", ipAddress)
+	return true
+}
+
+func (u *UI) displayModalAfterConnectivityCheck(ipAddress string) {
+	haveConnectivity := u.checkConnectivity(ipAddress)
+	u.app.QueueUpdateDraw(func() {
+		if !haveConnectivity {
+			u.showRendezvousIPConnectivityFailModal(ipAddress, u.setFocusToRendezvousIP)
+		} else {
+			u.saveRendezvousIPAndShowModalIfError(ipAddress, true)
+		}
+	})
+}
+
+func (u *UI) saveRendezvousIPAndShowModalIfError(ipAddress string, confirmSave bool) {
+	err := u.saveRendezvousIPAddress(ipAddress)
+
+	if err != nil {
+		u.showRendezvousModal(fmt.Sprintf(SAVE_RENDEZVOUS_IP_ERROR_FORMAT, err.Error()), []string{BACK_BUTTON})
+		return
+	}
+
+	if confirmSave {
+		u.showRendezvousIPSaveSuccessModal(ipAddress, u.setFocusToRendezvousIP)
+		return
+	}
+
+	u.app.Stop()
 }
