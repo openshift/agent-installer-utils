@@ -9,12 +9,14 @@ function parse_inputs() {
             --release-image-url) 
                 if [[ -n "$RELEASE_IMAGE_VERSION" ]]; then
                     echo "Error: Cannot specify both --release-image-url and --ocp-version." >&2
+                    usage
                     exit 1
                 fi
                 RELEASE_IMAGE_URL="$2"; shift ;;
             --ocp-version) 
                 if [[ -n "$RELEASE_IMAGE_URL" ]]; then
                     echo "Error: Cannot specify both --release-image-url and --ocp-version." >&2
+                    usage
                     exit 1
                 fi
                 RELEASE_IMAGE_VERSION="$2"; shift ;;
@@ -24,6 +26,7 @@ function parse_inputs() {
             --dir) DIR_PATH="$2"; shift ;;
             *) 
                 echo "Unknown parameter: $1" >&2
+                usage
                 exit 1 ;;
         esac
         shift
@@ -33,11 +36,13 @@ function parse_inputs() {
 function validate_inputs() {
     if [[ -z "${RELEASE_IMAGE_VERSION:-}" && -z "${RELEASE_IMAGE_URL:-}" ]]; then
         echo "Error: Either OpenShift version (--ocp-version) or release image URL (--release-image-url) must be provided." >&2
+        usage
         exit 1
     fi
 
     if [[ -z "${PULL_SECRET_FILE:-}" ]]; then
         echo "Error: Pull secret file is required." >&2
+        usage
         exit 1
     fi
 
@@ -56,6 +61,7 @@ function validate_inputs() {
     # Ensure that the OCP version is in the format `x.y.z`
     if [[ -n "$RELEASE_IMAGE_VERSION" && ! "$RELEASE_IMAGE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
         echo "Error: OpenShift version (--ocp-version) must be in the format major.minor.patch (e.g., 4.18.4)." >&2
+        usage
         exit 1
     fi
     if [[ -n "$SSH_KEY_FILE" && ! -f "$SSH_KEY_FILE" ]]; then

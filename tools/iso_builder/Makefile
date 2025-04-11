@@ -1,16 +1,11 @@
+.PHONY: cleanall clean-appliance-temp-dir build-ove-iso
 ARCH ?= x86_64
 
-.PHONY:clean
-clean:
-	rm -rf /tmp/iso_builder/ove-iso
-	rm -rf ove-assets/
+cleanall:
+	hack/cleanup.sh cleanall
 
-cleanall: clean
-	sudo rm -rf /tmp/iso_builder
+clean-appliance-temp-dir:
+	hack/cleanup.sh clean-appliance-temp-dir
 	
-.PHONY: build-ove-iso
 build-ove-iso:
-	OCP_RELEASE_IMAGE=${OCP_RELEASE_IMAGE} \
-	PULL_SECRET=${PULL_SECRET} \
-	ARCH=${ARCH} \
-	hack/build-ove-image.sh --release-image ${OCP_RELEASE_IMAGE} --arch ${ARCH} --pull-secret ${PULL_SECRET}
+	hack/build-ove-image.sh --release-image-url ${RELEASE_IMAGE_URL} --pull-secret-file ${PULL_SECRET_FILE}
