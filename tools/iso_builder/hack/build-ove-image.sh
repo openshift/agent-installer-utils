@@ -253,6 +253,18 @@ function build()
     create_ove_iso
     update_ignition
 
+    if [ "${ARCH}" == "x86_64" ]; then
+        # The release ISO is large, so users will often prefer copying it to a USB stick 
+        # rather than mounting it via virtual media on the BMC.
+        #
+        # However, booting from USB mass storage requires a Master Boot Record (MBR), 
+        # whereas optical drives rely on the El Torito ISO9660 boot extension.
+        #
+        # To support both boot methods—USB and virtual media—we augment the El Torito ISO 
+        # with an MBR, making it hybrid-bootable:
+        /usr/bin/isohybrid --uefi $agent_ove_iso
+    fi
+
     echo "Generated agent based installer OVE ISO at: $agent_ove_iso"
     end_time=$(date +%s)
     elapsed_time=$(($end_time - $start_time))
