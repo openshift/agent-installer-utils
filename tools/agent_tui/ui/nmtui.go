@@ -58,5 +58,4 @@ func (u *UI) showNMTUIWithErrorDialog(doneFunc func()) {
 			})
 		u.pages.AddPage("error", errorDialog, false, true)
 	}
-	doneFunc()
 }
