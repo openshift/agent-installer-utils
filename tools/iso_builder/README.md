@@ -19,6 +19,15 @@ By default:
 
 - The default output directory is `/tmp/iso_builder`
 
+## Pre-requisites
+
+1. xorriso (see [xorriso](https://www.gnu.org/software/xorriso/) for more information). On CentOS, RHEL, run `sudo dnf install -y xorriso`
+2. coreos-installer (see [coreos-installer](https://coreos.github.io/coreos-installer/getting-started/) for more information). On CentOS, RHEL, run `sudo dnf install -y coreos-installer`
+3. isohybrid (see [isohybrid](https://man.archlinux.org/man/core/syslinux/isohybrid.1.en) for more information). On CentOS, RHEL, run `sudo dnf install -y syslinux`
+4. oc (see [oc](https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/cli_tools/openshift-cli-oc#cli-installing-cli_cli-developer-commands) for more information).
+5. podman (see [podman](https://podman.io/docs/installation) for more information).
+
+
 ## Quick Start
 
 Run as simple bash script. Uses default arch and output dir location.
