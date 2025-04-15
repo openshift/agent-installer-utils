@@ -1,0 +1,83 @@
+# ISO Builder
+
+The ISOBuilder tool creates an ISO using the appliance and interactive unconfigured ignition commands from the agent-based installer. This ISO is designed for disconnected environments, enabling an interactive installation workflow.
+
+The generated ISO will include essential components such as:
+
+- Registry images
+- Agent TUI 
+- The new web UI
+- Embedded agent-based installer capabilities
+
+This ensures a seamless installation experience with all necessary resources pre-packaged.
+
+The generated ISO is saved at `/tmp/iso_builder/<OCP_VERSION>/ove/output/agent-ove.<arch>.iso`
+
+By default:
+
+- The architecture is `x86_64`
+
+- The default output directory is `/tmp/iso_builder`
+
+## Quick Start
+
+Run as simple bash script. Uses default arch and output dir location.
+```bash
+cd tools/iso_builder
+make build-ove-iso
+```
+Alternatively,
+
+```bash
+cd tools/iso_builder
+./hack/build-ove-image.sh --pull-secret-file <pull-secret> --ocp-version <openshift-major.minor.patch-version>
+```
+## Examples:
+- Specify release-image-url, useful for dev/test purposes:
+
+```bash
+cd tools/iso_builder
+make build-ove-iso
+./hack/build-ove-image.sh --pull-secret-file <pull-secret> --release-image-url <openshift-release-image-url>
+```
+
+- Specify a custom output dir:
+```bash
+cd tools/iso_builder
+./hack/build-ove-image.sh --pull-secret-file <pull-secret> --ocp-version <openshift-major.minor.patch-version> --dir <path>
+```
+
+- Specify a ssh file:
+```bash
+cd tools/iso_builder
+./hack/build-ove-image.sh --pull-secret-file <pull-secret> --ocp-version <openshift-major.minor.patch-version> --ssh-key-file <path>
+```
+
+## Outputs:
+`agent-ove.x86_64.iso`: Bootable agent OVE ISO image.
+Directory Structure After Running the Script:
+```bash
+/tmp/iso_builder/
+└── 4.19.0-0.ci-2025-04-01-173804
+    ├── agent-artifacts
+    ├── appliance
+    ├── ignition
+    ├── logs
+    └── ove
+        ├── output
+        │   └── agent-ove.x86_64.iso
+        └── work
+```
+## Cleanup:
+
+To clean default ISOBuilder tmp directory ( /tmp/iso_builder) and all the intermediate files along with the generated ISO 
+```bash
+cd tools/iso_builder
+make cleanall
+```
+
+This cleanup target is intended for development use—it removes only temporary working directories for a specific OCP_VERSION, preserving reusable artifacts like the image cache to speed up future rebuilds. It's a safer, more targeted alternative to cleanall, helping you save disk space without losing valuable cached content.
+```bash
+cd tools/iso_builder
+make clean-appliance-temp-dir
+```
