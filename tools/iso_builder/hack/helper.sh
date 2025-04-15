@@ -103,7 +103,7 @@ function usage() {
     echo
     echo "This script generates 'agent-ove.<arch>.iso' in the '/tmp/iso_builder/<OCP_VERSION>/ove/output' directory."
     echo "The default architecture is x86_64."
-    echo "The default directory path is /tmp/iso_builder.\n"
+    echo "The default directory path is /tmp/iso_builder."
     echo
     echo "Usage:"
     echo "  ./hack/build-ove-image.sh [OPTIONS]"
