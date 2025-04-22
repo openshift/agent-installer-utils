@@ -47,6 +47,8 @@ EOF
         fi
 
         cat << EOF >> ${cfg} 
+additionalImages:
+  - name: registry.redhat.io/rhel9/support-tools
 operators:
   - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
     packages:
