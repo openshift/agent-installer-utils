@@ -26,6 +26,7 @@ By default:
 3. isohybrid (see [isohybrid](https://man.archlinux.org/man/core/syslinux/isohybrid.1.en) for more information). On CentOS, RHEL, run `sudo dnf install -y syslinux`
 4. oc (see [oc](https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/cli_tools/openshift-cli-oc#cli-installing-cli_cli-developer-commands) for more information).
 5. podman (see [podman](https://podman.io/docs/installation) for more information).
+6. skopeo (see [skopeo](https://github.com/containers/skopeo/blob/main/install.md) for more information). On RHEL / CentOS Stream ≥ 8, run `sudo dnf -y install skopeo`
 
 
 ## Quick Start
