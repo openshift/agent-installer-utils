@@ -82,10 +82,16 @@ EOF
 }
 
 function build_live_iso() {
-    if [ ! -f "${appliance_work_dir}"/appliance.iso ]; then
+    if [[ ! -f "${appliance_work_dir}"/appliance.iso ]]; then
         echo "Building appliance ISO..."
         local pull_spec=quay.io/edge-infrastructure/openshift-appliance@sha256:f1e8c3d2bc0200e87c91020709129238c06d077f07cb3d934ced09f4843fe1ca
-        $SUDO podman run --rm -it --privileged --pull always --net=host -v "${appliance_work_dir}"/:/assets:Z  "${pull_spec}" build live-iso --log-level debug
+        if [[ -n "${CUSTOM_OPENSHIFT_INSTALLER_PATH}" ]]; then
+            echo "Using custom openshift installer from ${CUSTOM_OPENSHIFT_INSTALLER_PATH}"
+            patch_openshift_install_release_version "${full_ocp_version}"
+            $SUDO podman run --rm -it --privileged --pull always --net=host -v "${appliance_work_dir}"/:/assets:Z  --env OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE="${RELEASE_IMAGE_URL}" "${pull_spec}" build live-iso --log-level debug --debug-base-ignition
+        else
+            $SUDO podman run --rm -it --privileged --pull always --net=host -v "${appliance_work_dir}"/:/assets:Z  "${pull_spec}" build live-iso --log-level debug
+        fi
     else
         echo "Skip building appliance ISO. Reusing ${appliance_work_dir}/appliance.iso."
     fi

@@ -91,3 +91,26 @@ This cleanup target is intended for development use—it removes only temporary 
 cd tools/iso_builder
 make clean-appliance-temp-dir
 ```
+
+## Using a Custom OpenShift Installer:
+You can use a locally built OpenShift installer with the build-ove-image.sh script by following these steps:
+
+1. Build the Custom Installer
+Clone and build the OpenShift Installer from source:
+
+```
+git clone https://github.com/openshift/installer.git
+cd installer
+./hack/build.sh
+```
+This will produce the openshift-install binary in the bin/ directory.
+
+2. Set the Installer Path and Run the Script
+Set the CUSTOM_OPENSHIFT_INSTALLER_PATH environment variable to the directory containing your custom-built openshift-install binary, then run the build script:
+
+```
+CUSTOM_OPENSHIFT_INSTALLER_PATH=~/installer \
+./hack/build-ove-image.sh \
+  --release-image-url registry.ci.openshift.org/ocp/release:4.19.0-0.ci-2025-05-01-113742 \
+  --pull-secret-file ~/pull_secret.json
+```

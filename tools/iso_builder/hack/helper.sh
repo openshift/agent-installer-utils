@@ -3,6 +3,8 @@
 # Fail on unset variables and errors
 set -euo pipefail
 
+export CUSTOM_OPENSHIFT_INSTALLER_PATH="${CUSTOM_OPENSHIFT_INSTALLER_PATH:-}"
+
 function parse_inputs() {
     while [[ "$#" -gt 0 ]]; do
         case $1 in
@@ -151,4 +153,22 @@ function usage() {
     echo "          └── work"
     echo "----------------------------------------------------------------------------------------------------------------------"
     exit 1
+}
+
+function patch_openshift_install_release_version() {
+    local version=$1
+    local installer="${DIR_PATH}/$full_ocp_version/appliance/openshift-install"
+    cp "${CUSTOM_OPENSHIFT_INSTALLER_PATH}"/bin/openshift-install "${installer}"
+
+    local res=$(grep -oba ._RELEASE_VERSION_LOCATION_.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX ${installer})
+    local location=${res%%:*}
+
+    # If the release marker was found then it means that the version is missing
+    if [[ ! -z ${location} ]]; then
+        echo "Patching openshift-install with version ${version}"
+        printf "${version}\0" | dd of=${installer} bs=1 seek=${location} conv=notrunc &> /dev/null
+        ${installer} version
+    else
+        echo "Version already patched"
+    fi
 }
