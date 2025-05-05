@@ -50,6 +50,7 @@ EOF
         cat << EOF >> ${cfg} 
 additionalImages:
   - name: registry.redhat.io/rhel9/support-tools
+  - name: registry.redhat.io/rhel9/rhel-guest-image:9.5-1736773155
 operators:
   - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
     packages:
