@@ -148,6 +148,7 @@ func (u *UI) updateSelectIPList(ipAddresses []string) {
 					u.refreshSelectIPList()
 					u.setFocusToSelectIP()
 				})
+				u.setFocusToSelectIP()
 			default:
 				err := u.saveRendezvousIPAddress(selected)
 				if err != nil {
