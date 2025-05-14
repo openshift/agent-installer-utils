@@ -53,13 +53,29 @@ operators:
   - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
     packages:
       - name: kubevirt-hyperconverged
+        channels:
+          - name: stable
       - name: mtv-operator
+        channels:
+          - name: release-v2.7
       - name: kubernetes-nmstate-operator
+        channels:
+          - name: stable
       - name: node-healthcheck-operator
+        channels:
+          - name: stable
       - name: node-maintenance-operator
+        channels:
+          - name: stable
       - name: fence-agents-remediation
+        channels:
+          - name: stable
       - name: self-node-remediation
+        channels:
+          - name: stable
       - name: cluster-kube-descheduler-operator
+        channels:
+          - name: stable
 EOF
 
         if [ -n "${RELEASE_IMAGE_VERSION}" ]; then
