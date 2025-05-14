@@ -22,7 +22,8 @@ func (u *UI) showRendezvousIPConnectivityFailModal(ipAddress string, focusForBac
 			focusForBackButton()
 		}
 		if buttonLabel == CONFIGURE_NETWORK_BUTTON {
-			u.ShowNMTUI()
+			u.showNMTUIWithErrorDialog(u.setFocusToRendezvousIP)
+			u.pages.SwitchToPage(PAGE_RENDEZVOUS_IP_CONNECTIVITY_FAIL)
 		}
 
 	})
