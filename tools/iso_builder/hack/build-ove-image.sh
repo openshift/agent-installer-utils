@@ -97,6 +97,53 @@ EOF
     fi
 }
 
+function create_operator_crs() {
+    openshift_dir="${appliance_work_dir}/openshift"
+    crs_dir="${openshift_dir}/crs"
+    mkdir -p ${crs_dir}
+
+    cnv_cr=${crs_dir}/cnv_cr.yaml
+    cat << EOF >> ${cnv_cr}
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+  namespace: "openshift-cnv"
+EOF
+
+    descheduler_cr=${crs_dir}/kubedescheduler_cr.yaml
+    cat << EOF >> ${descheduler_cr}
+apiVersion: operator.openshift.io/v1
+kind: KubeDescheduler
+metadata:
+  name: cluster
+  namespace: openshift-kube-descheduler-operator
+spec:
+  managementState: Managed
+  deschedulingIntervalSeconds: 30
+  mode: Automatic
+  profiles:
+    - DevKubeVirtRelieveAndMigrate
+  profileCustomizations:
+    devEnableSoftTainter: true
+    devDeviationThresholds: AsymmetricLow
+    devActualUtilizationProfile: PrometheusCPUCombined
+EOF
+
+    machineconfig_worker_psi=${openshift_dir}/99-openshift-machineconfig-worker-psi-karg.yaml
+    cat << EOF >> ${machineconfig_worker_psi}
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: worker
+  name: 99-openshift-machineconfig-worker-psi-karg
+spec:
+  kernelArguments:
+    - psi=1
+EOF
+}
+
 function build_live_iso() {
     if [ ! -f "${appliance_work_dir}"/appliance.iso ]; then
         echo "Building appliance ISO..."
@@ -265,6 +312,7 @@ function build()
     fi
 
     create_appliance_config
+    create_operator_crs
     build_live_iso
     extract_live_iso
     setup_agent_artifacts
