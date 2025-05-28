@@ -146,7 +146,7 @@ EOF
 function build_live_iso() {
     if [ ! -f "${appliance_work_dir}"/appliance.iso ]; then
         echo "Building appliance ISO..."
-        local pull_spec=quay.io/edge-infrastructure/openshift-appliance@sha256:2d822bbf52fc178c6a420af9ea8a1f8dd81c5f2760f11336af30492dd5d2643a
+        local pull_spec=quay.io/edge-infrastructure/openshift-appliance@sha256:936210a29144140cc62fbe7cf6936542e5ba92f6d1b24feacbb2c1c28b84f9ae
         $SUDO podman run --rm -it --privileged --pull always --net=host -v "${appliance_work_dir}"/:/assets:Z  "${pull_spec}" build live-iso --log-level debug
     else
         echo "Skip building appliance ISO. Reusing ${appliance_work_dir}/appliance.iso."
