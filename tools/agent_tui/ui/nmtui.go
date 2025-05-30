@@ -49,8 +49,9 @@ func (u *UI) ShowNMTUI() error {
 
 func (u *UI) showNMTUIWithErrorDialog(doneFunc func()) {
 	if err := u.ShowNMTUI(); err != nil {
+		u.logger.Infof("error from ShowNMTUI: %v", err)
 		errorDialog := tview.NewModal().
-			SetBackgroundColor(newt.ColorBlack).
+			SetBackgroundColor(newt.ColorGray).
 			SetText(err.Error()).
 			AddButtons([]string{"Ok"}).
 			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
