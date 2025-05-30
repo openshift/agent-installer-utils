@@ -177,6 +177,9 @@ func (u *UI) createCheckPage(config checks.Config) {
 				u.focusedItem = len(u.focusableItems) - 1
 			}
 
+		case tcell.KeyESC:
+			return nil
+
 		default:
 			// forward the event to the default handler
 			return event
