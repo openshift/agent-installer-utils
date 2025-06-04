@@ -21,10 +21,10 @@ func (u *UI) createRendezvousModal() {
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			switch buttonLabel {
 			case CONTINUE_BUTTON, BACK_BUTTON:
-				u.setFocusToRendezvousIP()
 			case CONFIGURE_NETWORK_BUTTON:
-				u.ShowNMTUI()
+				u.showNMTUIWithErrorDialog(u.setFocusToRendezvousIP)
 			}
+			u.setFocusToRendezvousIP()
 		}).
 		SetBackgroundColor(newt.ColorGray)
 	u.rendezvousModal.
@@ -41,6 +41,6 @@ func (u *UI) showRendezvousModal(text string, buttons []string) {
 	u.rendezvousModal.ClearButtons()
 	u.rendezvousModal.AddButtons(buttons)
 	u.rendezvousModal.SetText(text)
+	u.pages.SwitchToPage(PAGE_RENDEZVOUS_MODAL)
 	u.app.SetFocus(u.rendezvousModal)
-	u.pages.ShowPage(PAGE_RENDEZVOUS_MODAL)
 }
