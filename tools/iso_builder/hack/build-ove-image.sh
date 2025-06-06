@@ -179,7 +179,7 @@ function extract_live_iso() {
         $SUDO chown -R $(whoami):$(whoami) "${work_dir}/"
         $SUDO umount ${appliance_mnt_dir}
     fi
-    volume_label=$(isoinfo -d -i "${appliance_work_dir}"/appliance.iso | grep "Volume id:" | cut -d' ' -f3-)
+    volume_label=$(xorriso -indev "${appliance_work_dir}"/appliance.iso -toc 2>/dev/null | awk -F',' '/ISO session/ {print $4}' | xargs)
 }
 
 function setup_agent_artifacts() {
