@@ -21,7 +21,7 @@ func (u *UI) createRendezvousModal() {
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			switch buttonLabel {
 			case CONTINUE_BUTTON, BACK_BUTTON:
-			case CONFIGURE_NETWORK_BUTTON:
+			case RENDEZVOUS_CONFIGURE_NETWORK_BUTTON:
 				u.showNMTUIWithErrorDialog(u.setFocusToRendezvousIP)
 			}
 			u.setFocusToRendezvousIP()
