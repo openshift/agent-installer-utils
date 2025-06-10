@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	EMPTY_OPTION = "" // list option used as spacing between IP addresses and <Back> button
+	EMPTY_OPTION                        = "" // list option used as spacing between IP addresses and <Back> button
+	RENDEZVOUS_CONFIGURE_NETWORK_BUTTON = "<Configure Network>"
 )
 
 func (u *UI) createSelectHostIPPage() {
@@ -129,13 +130,12 @@ func (u *UI) refreshSelectIPList() {
 func (u *UI) updateSelectIPList(ipAddresses []string) {
 	u.selectIPList.Clear()
 	backOption := "<Back>"
-	configureNetworkOption := "<Configure Network>"
 	options := ipAddresses
 	if len(ipAddresses) > 0 {
 		// only add spacer line if there are IP addresses
 		options = append(options, EMPTY_OPTION)
 	}
-	options = append(options, backOption, configureNetworkOption)
+	options = append(options, backOption, RENDEZVOUS_CONFIGURE_NETWORK_BUTTON)
 	for _, selected := range options {
 		u.selectIPList.AddItem(selected, "", rune(0), func() {
 			switch selected {
@@ -143,7 +143,7 @@ func (u *UI) updateSelectIPList(ipAddresses []string) {
 				// spacing between IP addresses and buttons
 			case backOption:
 				u.setFocusToRendezvousIP()
-			case configureNetworkOption:
+			case RENDEZVOUS_CONFIGURE_NETWORK_BUTTON:
 				u.showNMTUIWithErrorDialog(func() {
 					u.refreshSelectIPList()
 					u.setFocusToSelectIP()

@@ -17,7 +17,7 @@ func TestSelectIPListNavigation(t *testing.T) {
 	list.AddItem("IP2", "", '2', nil)
 	list.AddItem("", "", '3', nil)
 	list.AddItem(BACK_BUTTON, "", '4', nil)
-	list.AddItem(CONFIGURE_NETWORK_BUTTON, "", '5', nil)
+	list.AddItem(RENDEZVOUS_CONFIGURE_NETWORK_BUTTON, "", '5', nil)
 
 	list.SetInputCapture(getSelectIPListInputCapture(list))
 
@@ -54,7 +54,7 @@ func TestSelectIPListNavigation1Address(t *testing.T) {
 	list.AddItem("IP0", "", '0', nil)
 	list.AddItem("", "", '1', nil)
 	list.AddItem(BACK_BUTTON, "", '2', nil)
-	list.AddItem(CONFIGURE_NETWORK_BUTTON, "", '3', nil)
+	list.AddItem(RENDEZVOUS_CONFIGURE_NETWORK_BUTTON, "", '3', nil)
 
 	list.SetInputCapture(getSelectIPListInputCapture(list))
 
