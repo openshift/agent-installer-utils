@@ -46,7 +46,7 @@ EOF
 
         cat << EOF >> ${cfg} 
 additionalImages:
-  - name: registry.redhat.io/rhel9/support-tools
+  - name: registry.redhat.io/rhel9/support-tools:latest
 operators:
   - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
     packages:
@@ -55,7 +55,7 @@ operators:
           - name: stable
       - name: mtv-operator
         channels:
-          - name: release-v2.7
+          - name: release-v2.8
       - name: kubernetes-nmstate-operator
         channels:
           - name: stable
