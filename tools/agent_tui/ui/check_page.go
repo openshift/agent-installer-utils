@@ -13,8 +13,8 @@ import (
 const (
 	CONFIGURE_NETWORK_LABEL  string = "Configure Networking"
 	RELEASE_IMAGE_LABEL      string = "Release Image"
-	CONFIGURE_NETWORK_BUTTON string = "<Configure Network>"
-	QUIT_BUTTON              string = "<Quit>"
+	CONFIGURE_NETWORK_BUTTON string = "<[::u]C[::-]onfigure Network>"
+	QUIT_BUTTON              string = "<[::u]Q[::-]uit>"
 	PAGE_CHECKSCREEN         string = "checkScreen"
 
 	mainFlexHeight            = 10
@@ -179,6 +179,14 @@ func (u *UI) createCheckPage(config checks.Config) {
 
 		case tcell.KeyESC:
 			return nil
+
+		case tcell.KeyRune:
+			if event.Rune() == 'Q' || event.Rune() == 'q' {
+				u.app.Stop()
+			}
+			if event.Rune() == 'C' || event.Rune() == 'c' {
+				u.showNMTUIWithErrorDialog(u.setFocusToChecks)
+			}
 
 		default:
 			// forward the event to the default handler
