@@ -59,16 +59,7 @@ operators:
       - name: kubernetes-nmstate-operator
         channels:
           - name: stable
-      - name: node-healthcheck-operator
-        channels:
-          - name: stable
       - name: node-maintenance-operator
-        channels:
-          - name: stable
-      - name: fence-agents-remediation
-        channels:
-          - name: stable
-      - name: self-node-remediation
         channels:
           - name: stable
       - name: cluster-kube-descheduler-operator
