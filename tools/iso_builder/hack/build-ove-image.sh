@@ -48,7 +48,7 @@ EOF
 additionalImages:
   - name: registry.redhat.io/rhel9/support-tools:latest
 operators:
-  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
+  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.20
     packages:
       - name: kubevirt-hyperconverged
         channels:
@@ -176,7 +176,7 @@ function extract_live_iso() {
 function setup_agent_artifacts() {
     local artifacts_dir="${DIR_PATH}"/$full_ocp_version/agent-artifacts
     local image=assisted-install-ui
-    local pull_spec=registry.ci.openshift.org/ocp/4.19:"${image}"
+    local pull_spec=registry.ci.openshift.org/ocp/4.20:"${image}"
     local image_dir="${work_dir}"/images/"${image}"
     if [ -d "${artifacts_dir}" ] && [ -f "${image_dir}/${image}.tar" ]; then
         echo "Skip preparing agent TUI artifacts. Reusing ${artifacts_dir}."
