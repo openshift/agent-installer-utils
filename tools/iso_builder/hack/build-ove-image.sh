@@ -267,15 +267,16 @@ function update_ignition() {
 
     if [ ! -f "${updated_ignition}" ] || [ ! -f "${agent_ove_iso}" ]; then
         echo "Updating ignition..."
+        local script_dir="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
         local new_unit=$(cat <<EOF
 {
-    "contents": $(cat data/ove/data/systemd/agent-setup-tui.service | sed -z 's/\n$//' | jq -Rs .),
+    "contents": $(cat "${script_dir}/../data/ove/data/systemd/agent-setup-tui.service" | sed -z 's/\n$//' | jq -Rs .),
     "name": "agent-setup-tui.service",
     "enabled": true
 }
 EOF
 )
-        local encoded_content=$(base64 -w 0 data/ove/data/files/usr/local/bin/setup-agent-tui.sh)
+        local encoded_content=$(base64 -w 0 "${script_dir}/../data/ove/data/files/usr/local/bin/setup-agent-tui.sh")
         local new_file=$(cat <<EOF
 {
         "group": {},
