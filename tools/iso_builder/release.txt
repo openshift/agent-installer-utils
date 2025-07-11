@@ -1,0 +1,12 @@
+Dev Preview OCP Version: 4.19.4
+
+These are the operators included with the dev preview version of OVE ISOBuilder in OCP 4.19
+|-------------------------------------|--------------|---------------------------------------------------|
+| Operator                            | Channel      | Version                                           |
+|-------------------------------------|--------------|---------------------------------------------------|
+| kubevirt-hyperconverged             | stable       | kubevirt-hyperconverged-operator.v4.19.0.         |
+| kubernetes-nmstate-operator         | stable       | kubernetes-nmstate-operator.4.19.0-202507011209.  |
+| node-maintenance-operator           | stable       | node-maintenance-operator.v5.4.0                  |
+| cluster-kube-descheduler-operator   | stable       | clusterkubedescheduleroperator.v5.2.0             |
+| mtv-operator                        | release-v2.9 | mtv-operator.v2.9.0                               |
+|-------------------------------------|--------------|---------------------------------------------------|
