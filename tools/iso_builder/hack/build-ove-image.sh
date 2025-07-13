@@ -138,7 +138,12 @@ function build_live_iso() {
     if [ ! -f "${appliance_work_dir}"/appliance.iso ]; then
         echo "Building appliance ISO..."
         local pull_spec=quay.io/edge-infrastructure/openshift-appliance@sha256:82836d7a7e257e83c5065fcdb731a09b8bec7228be3ee8c9122b4b5c45463b73
-        $SUDO podman run --rm -it --privileged --pull always --net=host -v "${appliance_work_dir}"/:/assets:Z  "${pull_spec}" build live-iso --log-level debug
+        local appliance_command="podman run --rm -it --privileged --pull always --net=host -v ${appliance_work_dir}/:/assets:Z  ${pull_spec} build live-iso --log-level debug"
+        if [ -f "${appliance_work_dir}/openshift-install" ]; then
+            echo "openshift-install binary at ${appliance_work_dir} will be used to generate the unconfigured-ignition"
+            appliance_command="$appliance_command --debug-base-ignition"
+        fi
+        $SUDO $appliance_command
     else
         echo "Skip building appliance ISO. Reusing ${appliance_work_dir}/appliance.iso."
     fi
