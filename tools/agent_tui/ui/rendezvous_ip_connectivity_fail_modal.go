@@ -21,7 +21,7 @@ func (u *UI) showRendezvousIPConnectivityFailModal(ipAddress string, focusForBac
 		if buttonLabel == BACK_BUTTON {
 			focusForBackButton()
 		}
-		if buttonLabel == CONFIGURE_NETWORK_BUTTON {
+		if buttonLabel == RENDEZVOUS_CONFIGURE_NETWORK_BUTTON {
 			u.showNMTUIWithErrorDialog(u.setFocusToRendezvousIP)
 			u.pages.SwitchToPage(PAGE_RENDEZVOUS_IP_CONNECTIVITY_FAIL)
 		}
@@ -31,7 +31,7 @@ func (u *UI) showRendezvousIPConnectivityFailModal(ipAddress string, focusForBac
 	u.connectivityFailModal.SetBorder(true)
 	u.connectivityFailModal.SetButtonBackgroundColor(newt.ColorGray).
 		SetButtonTextColor(newt.ColorRed)
-	userPromptButtons := []string{SAVE_AND_CONTINUE_BUTTON, BACK_BUTTON, CONFIGURE_NETWORK_BUTTON}
+	userPromptButtons := []string{SAVE_AND_CONTINUE_BUTTON, BACK_BUTTON, RENDEZVOUS_CONFIGURE_NETWORK_BUTTON}
 	u.connectivityFailModal.AddButtons(userPromptButtons)
 	u.connectivityFailModal.SetText(CONNECTIVITY_CHECK_FAIL_TEXT_FORMAT)
 
