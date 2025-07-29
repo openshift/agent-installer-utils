@@ -180,7 +180,7 @@ function extract_live_iso() {
 }
 
 function setup_agent_artifacts() {
-    local image=assisted-install-ui
+    local image=agent-installer-ui
     local pull_spec=registry.ci.openshift.org/ocp/4.20:"${image}"
     local image_dir="${work_dir}"/images/"${image}"
     
