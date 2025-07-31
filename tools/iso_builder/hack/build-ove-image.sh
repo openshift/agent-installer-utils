@@ -195,23 +195,7 @@ function setup_agent_artifacts() {
         else
             osarch="${ARCH}"
         fi
-
-        local image_pull_spec=$(oc adm release info --registry-config="${PULL_SECRET_FILE}" --image-for=agent-installer-utils --filter-by-os=linux/"${osarch}" --insecure=true "${image_ref}")
-        local files=("/usr/bin/agent-tui" "/usr/lib64/libnmstate.so.*")
-        for f in "${files[@]}"; do
-            echo "Extracting $f to ${artifacts_dir}"
-            oc image extract --path="${f}:${artifacts_dir}" --registry-config="${PULL_SECRET_FILE}" --filter-by-os=linux/"${osarch}" --insecure=true --confirm "${image_pull_spec}"
-        done
-
-        # Make sure files could be executed
-        chmod -R 555 "${artifacts_dir}"
-
-        artfcts="${work_dir}"/agent-artifacts
-        mkdir -p "${artfcts}"
-
-        # Squash the directory to save space
-        mksquashfs "${artifacts_dir}" "${artfcts}"/agent-artifacts.squashfs -comp xz -b 1M -Xdict-size 512K
-
+        
         if [ ! -f "${image_dir}"/"${image}".tar ]; then
             # Copy assisted-installer-ui image to /images dir
             mkdir -p "${image_dir}"
@@ -249,55 +233,6 @@ function create_ove_iso() {
     fi
 }
 
-function update_ignition() {
-    local ignition_dir="${DIR_PATH}"/"${full_ocp_version}"/ignition
-    mkdir -p "${ignition_dir}"
-    local og_ignition="${ignition_dir}"/og_ignition.ign
-    local updated_ignition="${ignition_dir}"/updated_ignition.ign
-
-    if [ ! -f "${og_ignition}" ] || [ ! -f "${agent_ove_iso}" ]; then
-        echo "Extracting ignition."
-        coreos-installer iso ignition show "${agent_ove_iso}" | jq . >> "${og_ignition}"
-    else
-        echo "Skipping extracting ignition. Reusing ${og_ignition}."
-    fi
-
-    if [ ! -f "${updated_ignition}" ] || [ ! -f "${agent_ove_iso}" ]; then
-        echo "Updating ignition..."
-        local script_dir="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
-        local new_unit=$(cat <<EOF
-{
-    "contents": $(cat "${script_dir}/../data/ove/data/systemd/agent-setup-tui.service" | sed -z 's/\n$//' | jq -Rs .),
-    "name": "agent-setup-tui.service",
-    "enabled": true
-}
-EOF
-)
-        local encoded_content=$(base64 -w 0 "${script_dir}/../data/ove/data/files/usr/local/bin/setup-agent-tui.sh")
-        local new_file=$(cat <<EOF
-{
-        "group": {},
-        "overwrite": true,
-        "path": "/usr/local/bin/setup-agent-tui.sh",
-        "user": {
-          "name": "root"
-        },
-        "contents": {
-          "source": "data:text/plain;charset=utf-8;base64,$encoded_content",
-          "verification": {}
-        },
-        "mode": 365
-    }
-EOF
-)
-        jq ".systemd.units += [$new_unit] | .storage.files += [$new_file]" "${og_ignition}" > "${updated_ignition}"
-        echo "Embedding updated ignition into ISO..."
-        coreos-installer iso ignition embed --force -i "${updated_ignition}" "${agent_ove_iso}"
-    else
-        echo "Skipping updating ignition. Reusing ${updated_ignition}."
-    fi
-}
-
 function build()
 {
     start_time=$(date +%s)
@@ -314,7 +249,6 @@ function build()
     extract_live_iso
     setup_agent_artifacts
     create_ove_iso
-    update_ignition
 
     if [ "${ARCH}" == "x86_64" ]; then
         # The release ISO is large, so users will often prefer copying it to a USB stick 
