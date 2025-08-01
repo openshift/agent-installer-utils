@@ -181,7 +181,7 @@ function extract_live_iso() {
 
 function setup_agent_artifacts() {
     local artifacts_dir="${DIR_PATH}"/$full_ocp_version/agent-artifacts
-    local image=assisted-install-ui
+    local image=agent-installer-ui
     local pull_spec=registry.ci.openshift.org/ocp/4.20:"${image}"
     local image_dir="${work_dir}"/images/"${image}"
     if [ -d "${artifacts_dir}" ] && [ -f "${image_dir}/${image}.tar" ]; then
