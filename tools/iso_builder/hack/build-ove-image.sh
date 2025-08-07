@@ -22,11 +22,8 @@ setup_vars
 source $SCRIPTDIR/logging.sh
 
 function create_appliance_config() {
-    appliance_work_dir="${DIR_PATH}/$full_ocp_version/appliance"
-    mkdir -p "${appliance_work_dir}"
-    if [ ! -f "${appliance_work_dir}"/appliance-config.yaml ]; then
-        cp -rf $(pwd)/config/${major_minor_version}/* ${appliance_work_dir}
-        
+    # The appliance-config.yaml has been copied to the correct directory
+    if [ -f "${appliance_work_dir}"/appliance-config.yaml ]; then
         echo "Creating appliance config..."
         cfg=${appliance_work_dir}/appliance-config.yaml
 
@@ -74,7 +71,7 @@ function build_live_iso() {
 }
 
 function extract_live_iso() {
-    local appliance_mnt_dir="$appliance_work_dir/mnt"
+    local appliance_mnt_dir="${appliance_work_dir}/isomnt"
     if [ -d "${appliance_mnt_dir}" ]; then
         echo "Skip extracting appliance ISO. Reusing ${appliance_mnt_dir}."
     else
@@ -87,17 +84,25 @@ function extract_live_iso() {
             ls -lh "${appliance_work_dir}"
             exit 1
         fi
-        # Mount the ISO
-        $SUDO mount -o loop "${appliance_work_dir}"/appliance.iso "${appliance_mnt_dir}"
+        # Mount the ISO when not in a container
+        if [ ${appliance_work_dir} != '/' ]; then
+            $SUDO mount -o loop "${appliance_work_dir}"/appliance.iso "${appliance_mnt_dir}"
+        fi
     fi
     if [ -d "${work_dir}" ]; then
         echo "Skip copying extracted appliance ISO contents to a writable directory. Reusing ${work_dir}."
     else
         mkdir -p "${work_dir}"
+        if [ ${appliance_work_dir} == '/' ]; then
+            # Use osirrox to extract the ISO without mounting it
+            $SUDO osirrox -indev "${appliance_work_dir}"/appliance.iso -extract / "${appliance_mnt_dir}"
+        fi
         echo "Copying extracted appliance ISO contents to a writable directory."
         $SUDO rsync -aH --info=progress2 "${appliance_mnt_dir}/" "${work_dir}/"
         $SUDO chown -R $(whoami):$(whoami) "${work_dir}/"
-        $SUDO umount ${appliance_mnt_dir}
+        if mountpoint -q ${appliance_mnt_dir}; then
+            $SUDO umount ${appliance_mnt_dir}
+        fi
     fi
     volume_label=$(xorriso -indev "${appliance_work_dir}"/appliance.iso -toc 2>/dev/null | awk -F',' '/ISO session/ {print $4}' | xargs)
 }
@@ -106,7 +111,7 @@ function setup_agent_artifacts() {
     local image=agent-installer-ui
     local pull_spec=registry.ci.openshift.org/ocp/4.20:"${image}"
     local image_dir="${work_dir}"/images/"${image}"
-    
+
     if [ ! -f "${image_dir}"/"${image}".tar ]; then
         # Copy assisted-installer-ui image to /images dir
         echo "skopeo copy UI image to oci-archive:${image_dir}/${image}.tar"
@@ -126,7 +131,7 @@ function create_ove_iso() {
             # Add 2047 to round up any remaining bytes to a full sector
             local boot_load_size=$(( (size + 2047) / 2048 ))
         else
-            echo "Error: Clean /tmp/iso_builder directory." 
+            echo "Error: Clean /tmp/iso_builder directory."
             exit 1
         fi
 
@@ -144,23 +149,9 @@ function create_ove_iso() {
     fi
 }
 
-function build()
+function finalize()
 {
-    start_time=$(date +%s)
-
-    if [ "$(id -u)" -eq 0 ]; then
-        SUDO=""
-    else
-        SUDO="sudo"
-    fi
-
-    create_appliance_config
-    build_live_iso
-    extract_live_iso
-    setup_agent_artifacts
-    create_ove_iso
-
-    if [ "${ARCH}" == "x86_64" ]; then
+   if [ "${ARCH}" == "x86_64" ]; then
         # The release ISO is large, so users will often prefer copying it to a USB stick 
         # rather than mounting it via virtual media on the BMC.
         #
@@ -181,6 +172,51 @@ function build()
     if [[ $minutes -gt 0 && $seconds -gt 0 ]]; then
         echo "ISOBuilder execution time: ${minutes}m ${seconds}s"
     fi
+}
+
+function build()
+{
+    start_time=$(date +%s)
+
+    if [ "$(id -u)" -eq 0 ]; then
+        SUDO=""
+    else
+        SUDO="sudo"
+    fi
+
+    case "$STEP" in
+    "all")
+      # Copy the configuration files for the version
+      cp -rf $(pwd)/config/${major_minor_version}/* ${appliance_work_dir}
+
+      create_appliance_config
+      build_live_iso
+      extract_live_iso
+      setup_agent_artifacts
+      create_ove_iso
+      finalize
+      ;;
+    "configure")
+      create_appliance_config
+      ;;
+    "create-iso")
+      extract_live_iso
+      setup_agent_artifacts
+      create_ove_iso
+      finalize
+
+      # Remove directory to limit size of container
+      rm -r ${work_dir}
+
+      # Move to top-level dir for easier retrieval
+      mv -v ${agent_ove_iso} ${appliance_work_dir}
+      ;;
+  *)
+    echo "Error: The STEP variable must be 'all', 'configure', or 'create-iso'." >&2
+    exit 1
+    ;;
+esac
+
 }
 
 # Build agent installer OVI ISO
