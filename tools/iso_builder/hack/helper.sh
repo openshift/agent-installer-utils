@@ -92,6 +92,7 @@ function setup_vars() {
     fi
 
     major_minor_patch_version=$(echo "\"$full_ocp_version\"" | jq -r 'split("-")[0]')
+    major_minor_version=$(echo $major_minor_patch_version | cut -d'.' -f1,2 )
     ove_dir="${DIR_PATH}/$full_ocp_version/ove"
     work_dir="${ove_dir}/work"
     output_dir="${ove_dir}/output"
