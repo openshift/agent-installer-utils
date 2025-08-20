@@ -1,5 +1,15 @@
-apiVersion: hco.kubevirt.io/v1beta1
-kind: HyperConverged
+apiVersion: operator.openshift.io/v1
+kind: KubeDescheduler
 metadata:
-  name: kubevirt-hyperconverged
-  namespace: "openshift-cnv"
+  name: cluster
+  namespace: openshift-kube-descheduler-operator
+spec:
+  managementState: Managed
+  deschedulingIntervalSeconds: 30
+  mode: Automatic
+  profiles:
+    - DevKubeVirtRelieveAndMigrate
+  profileCustomizations:
+    devEnableSoftTainter: true
+    devDeviationThresholds: AsymmetricLow
+    devActualUtilizationProfile: PrometheusCPUCombined
