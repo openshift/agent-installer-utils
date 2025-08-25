@@ -1,5 +1,21 @@
-.PHONY: cleanall clean-appliance-temp-dir build-ove-iso
+.PHONY: cleanall clean-appliance-temp-dir build-ove-iso build-ove-iso-container
+
 ARCH ?= x86_64
+PULL_SECRET_FILE ?= ./pull-secret.json
+RELEASE_IMAGE_URL ?=
+RELEASE_IMAGE_VERSION ?=
+
+ifdef RELEASE_IMAGE_VERSION
+    RELEASE_FLAG := --ocp-version
+    RELEASE_VALUE := $(RELEASE_IMAGE_VERSION)
+    full_ocp_version :=${RELEASE_IMAGE_VERSION}
+else ifdef RELEASE_IMAGE_URL
+    RELEASE_FLAG := --release-image-url
+    RELEASE_VALUE := $(RELEASE_IMAGE_URL)
+    full_ocp_version := $(shell skopeo inspect --authfile $(PULL_SECRET_FILE) docker://$(RELEASE_IMAGE_URL) | jq -r '.Labels["io.openshift.release"]')
+endif
+
+MAJOR_MINOR_VERSION := $(shell echo $(full_ocp_version) | cut -d'.' -f1,2)
 
 cleanall:
 	hack/cleanup.sh cleanall
@@ -8,4 +24,19 @@ clean-appliance-temp-dir:
 	hack/cleanup.sh clean-appliance-temp-dir
 	
 build-ove-iso:
-	hack/build-ove-image.sh --release-image-url ${RELEASE_IMAGE_URL} --pull-secret-file ${PULL_SECRET_FILE}
+	hack/build-ove-image.sh $(RELEASE_FLAG) $(RELEASE_VALUE) --pull-secret-file $(PULL_SECRET_FILE)
+
+build-ove-iso-container:
+	# Build the container with specific capabilities to support podman used by openshift-appliance
+	@sudo buildah bud \
+		--env RELEASE_FLAG="$(RELEASE_FLAG)" \
+		--env RELEASE_VALUE="$(RELEASE_VALUE)" \
+		--env MAJOR_MINOR_VERSION="$(MAJOR_MINOR_VERSION)" \
+		--authfile $(PULL_SECRET_FILE) \
+		--secret id=image_pull_secrets,src=$(PULL_SECRET_FILE) \
+		--cap-add CAP_SYS_ADMIN \
+		--cap-add CAP_NET_ADMIN \
+		--storage-driver vfs \
+		--security-opt label=type:container_runtime_t \
+		-t appliance-test \
+		-f Dockerfile

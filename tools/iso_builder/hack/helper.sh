@@ -24,6 +24,7 @@ function parse_inputs() {
             --pull-secret-file) PULL_SECRET_FILE="$2"; shift ;;
             --ssh-key-file) SSH_KEY_FILE="$2"; shift ;;
             --dir) DIR_PATH="$2"; shift ;;
+            --step) STEP="$2"; shift ;;
             *) 
                 echo "Unknown parameter: $1" >&2
                 usage
@@ -75,6 +76,19 @@ function validate_inputs() {
     else
         echo "ISOBuilder assets will be stored in: $DIR_PATH."
     fi
+
+    if [[ -z "${STEP:-}" ]]; then
+        # default case when script is run directly
+        STEP="all"
+    fi
+
+    if [[ "$STEP" != "all" && "$STEP" != "configure" && "$STEP" != "create-iso" ]]; then
+        echo "Error: The STEP variable must be 'all', 'configure', or 'create-iso'." >&2
+        exit 1
+    fi
+
+    echo "Using step $STEP"
+
 }
 
 function setup_vars() {
@@ -93,14 +107,23 @@ function setup_vars() {
 
     major_minor_patch_version=$(echo "\"$full_ocp_version\"" | jq -r 'split("-")[0]')
     major_minor_version=$(echo $major_minor_patch_version | cut -d'.' -f1,2 )
-    ove_dir="${DIR_PATH}/$full_ocp_version/ove"
+
+    if [ ${DIR_PATH} == '/' ]; then
+        ove_dir="/ove"
+        LOGDIR="/logs"
+        appliance_work_dir="/"
+    else
+        ove_dir="${DIR_PATH}/$full_ocp_version/ove"
+        LOGDIR=${DIR_PATH}/$full_ocp_version/logs
+        appliance_work_dir="${DIR_PATH}/$full_ocp_version/appliance"
+        mkdir -p "${DIR_PATH}"
+        mkdir -p "${appliance_work_dir}"
+    fi
+
     work_dir="${ove_dir}/work"
     output_dir="${ove_dir}/output"
     agent_ove_iso="${output_dir}"/agent-ove."${ARCH}".iso
-    LOGDIR=${DIR_PATH}/$full_ocp_version/logs
-    
 
-    mkdir -p "${DIR_PATH}"
     mkdir -p "${output_dir}"
 }
 
@@ -130,6 +153,7 @@ function usage() {
     echo "  --arch <architecture>          Target CPU architecture (default: x86_64)"
     echo "  --ssh-key-file <path>          Path to the SSH key file (e.g., ~/.ssh/id_rsa)"
     echo "  --dir <path>                   Path for ISOBuilder assets (default: /tmp/iso_builder)"
+    echo "  --step <step>                  Control the steps that will be invoked, options are all, configure, and create-iso (default: all)"
     echo ""
     echo "Examples:"
     echo "$0 --pull-secret-file ~/pull_secret.json --release-image-url registry.ci.openshift.org/ocp/release:4.19.0-0.ci-2025-04-01-173804"
