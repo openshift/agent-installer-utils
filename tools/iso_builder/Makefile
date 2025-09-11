@@ -29,11 +29,11 @@ build-ove-iso:
 build-ove-iso-container:
 	# Build the container with specific capabilities to support podman used by openshift-appliance
 	@sudo buildah bud \
-		--env RELEASE_FLAG="$(RELEASE_FLAG)" \
-		--env RELEASE_VALUE="$(RELEASE_VALUE)" \
-		--env MAJOR_MINOR_VERSION="$(MAJOR_MINOR_VERSION)" \
+		--build-arg RELEASE_FLAG="$(RELEASE_FLAG)" \
+		--build-arg RELEASE_VALUE="$(RELEASE_VALUE)" \
+		--build-arg MAJOR_MINOR_VERSION="$(MAJOR_MINOR_VERSION)" \
 		--authfile $(PULL_SECRET_FILE) \
-		--secret id=image_pull_secrets,src=$(PULL_SECRET_FILE) \
+		--secret id=ove-ui-image-pull-secret/.dockerconfigjson,src=$(PULL_SECRET_FILE) \
 		--cap-add CAP_SYS_ADMIN \
 		--cap-add CAP_NET_ADMIN \
 		--storage-driver vfs \

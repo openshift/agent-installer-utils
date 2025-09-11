@@ -1,6 +1,15 @@
 # Use appliance image as the base
 FROM registry.ci.openshift.org/ocp/4.20:agent-preinstall-image-builder
 
+# Define the arguments that will be passed in from the pipeline
+ARG RELEASE_FLAG
+ARG RELEASE_VALUE
+ARG MAJOR_MINOR_VERSION
+# Set the environment variables using the values from the arguments
+ENV RELEASE_FLAG=${RELEASE_FLAG}
+ENV RELEASE_VALUE=${RELEASE_VALUE}
+ENV MAJOR_MINOR_VERSION=${MAJOR_MINOR_VERSION}
+
 USER root
 
 # Copy the configuration script into the container
@@ -14,8 +23,8 @@ RUN chmod +x /tmp/logging.sh
 COPY ./config/${MAJOR_MINOR_VERSION}/. /
 
 # Run the configuration script to finish setting up appliance-config.yaml
-RUN --mount=type=secret,id=image_pull_secrets,target=/run/secrets/pull-secret.txt \
-    /tmp/build-ove-image.sh --pull-secret-file /run/secrets/pull-secret.txt "$RELEASE_FLAG" "$RELEASE_VALUE" \
+RUN --mount=type=secret,id=ove-ui-image-pull-secret/.dockerconfigjson \
+    /tmp/build-ove-image.sh --pull-secret-file /run/secrets/ove-ui-image-pull-secret/.dockerconfigjson "$RELEASE_FLAG" "$RELEASE_VALUE" \
     --dir / --step "configure"
 
 RUN dnf -y update; yum -y reinstall shadow-utils; \
@@ -33,8 +42,8 @@ RUN /openshift-appliance build live-iso --log-level debug && rm -r /temp && rm -
 # Do the postprocessing step to generate the OVE ISO
 RUN dnf install -y xorriso rsync
 
-RUN --mount=type=secret,id=image_pull_secrets,target=/run/secrets/pull-secret.txt \
-    /tmp/build-ove-image.sh --pull-secret-file /run/secrets/pull-secret.txt $RELEASE_FLAG $RELEASE_VALUE --dir / --step "create-iso" \
+RUN --mount=type=secret,id=ove-ui-image-pull-secret/.dockerconfigjson \
+    /tmp/build-ove-image.sh --pull-secret-file /run/secrets/ove-ui-image-pull-secret/.dockerconfigjson $RELEASE_FLAG $RELEASE_VALUE --dir / --step "create-iso" \
     && rm /appliance.iso && rm -rf /isomnt
 
 # Override openshift-appliance entrypoint for testing purposes

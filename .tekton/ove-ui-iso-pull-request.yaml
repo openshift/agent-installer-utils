@@ -30,11 +30,18 @@ spec:
     value: 5d
   - name: build-platforms
     value:
-    - linux/x86_64
+    - linux-root/amd64 
   - name: dockerfile
     value: Dockerfile
   - name: path-context
     value: tools/iso_builder
+  - name: build-args
+    value:
+      - "RELEASE_FLAG=--release-image-url"
+      - "RELEASE_VALUE=registry.ci.openshift.org/ocp/release:4.20.0-0.ci-2025-09-10-183123"
+      - "MAJOR_MINOR_VERSION=4.20"
+  - name: privileged-nested
+    value: 'true'
   pipelineSpec:
     description: |
       This pipeline is ideal for building multi-arch container images from a Containerfile while maintaining trust after pipeline customization.
@@ -230,6 +237,8 @@ spec:
         value: $(tasks.prefetch-dependencies.results.CACHI2_ARTIFACT)
       - name: IMAGE_APPEND_PLATFORM
         value: "true"
+      - name: ADDITIONAL_SECRET
+        value: "ove-ui-image-pull-secret"
       runAfter:
       - prefetch-dependencies
       taskRef:
