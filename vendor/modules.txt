@@ -63,7 +63,7 @@ github.com/pmezard/go-difflib/difflib
 # github.com/rivo/tview v0.0.0-20230104153304-892d1a2eb0da
 ## explicit; go 1.18
 github.com/rivo/tview
-# github.com/rivo/uniseg v0.4.2
+# github.com/rivo/uniseg v0.4.7
 ## explicit; go 1.18
 github.com/rivo/uniseg
 # github.com/sirupsen/logrus v1.9.0
