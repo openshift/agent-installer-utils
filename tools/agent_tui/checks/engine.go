@@ -1,7 +1,10 @@
 package checks
 
 import (
+	"errors"
+	"io/fs"
 	"net/http"
+	"os"
 	"os/exec"
 	"time"
 
@@ -13,8 +16,6 @@ const (
 	CheckTypeReleaseImageHostDNS  = "ReleaseImageHostDNS"
 	CheckTypeReleaseImageHostPing = "ReleaseImageHostPing"
 	CheckTypeReleaseImageHttp     = "ReleaseImageHttp"
-
-	WORKFLOW_TYPE_INSTALL_INTERACTIVE_DISCONNECTED = "install-interactive-disconnected"
 )
 
 type Config struct {
@@ -23,8 +24,6 @@ type Config struct {
 
 	ReleaseImageHostname           string
 	ReleaseImageSchemeHostnamePort string
-
-	WorkflowType string
 }
 
 // ChecksEngine is the model part, and is composed by a number
@@ -95,10 +94,9 @@ var defaultCheckFunctions = CheckFunctions{
 func NewEngine(c chan CheckResult, config Config, logger *logrus.Logger, checkFuncs ...CheckFunctions) *Engine {
 	checks := []*Check{}
 
-	// The install-interactive-disconnected workflow has the release image
-	// contents included in its live ISO. Checking release image
-	// connectivity is not needed.
-	if config.WorkflowType != WORKFLOW_TYPE_INSTALL_INTERACTIVE_DISCONNECTED {
+	// When a local registry is present, there is no need to check the release
+	// image connectivity.
+	if _, err := os.Stat("/etc/assisted/registry.env"); errors.Is(err, fs.ErrNotExist) {
 		cf := defaultCheckFunctions
 		if len(checkFuncs) > 0 {
 			cf = checkFuncs[0]
