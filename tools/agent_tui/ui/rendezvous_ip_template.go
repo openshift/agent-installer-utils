@@ -2,6 +2,9 @@ package ui
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
+	"io/fs"
 	"os"
 	"text/template"
 )
@@ -25,7 +28,10 @@ func (u *UI) saveRendezvousIPAddress(ipAddress string) error {
 }
 
 func templateRendezvousHostEnv(templateData interface{}) error {
-	data, err := os.ReadFile(RENDEZVOUS_HOST_ENV_PATH)
+	data, err := os.ReadFile(fmt.Sprintf("%s.template", RENDEZVOUS_HOST_ENV_PATH))
+	if errors.Is(err, fs.ErrNotExist) {
+		data, err = os.ReadFile(RENDEZVOUS_HOST_ENV_PATH)
+	}
 	if err != nil {
 		return err
 	}
