@@ -26,8 +26,11 @@ type TreeNode struct {
 	// The item's text.
 	text string
 
-	// The text color.
-	color tcell.Color
+	// The text style.
+	textStyle tcell.Style
+
+	// The style of selected text.
+	selectedTextStyle tcell.Style
 
 	// Whether or not this node can be selected.
 	selectable bool
@@ -55,11 +58,12 @@ type TreeNode struct {
 // NewTreeNode returns a new tree node.
 func NewTreeNode(text string) *TreeNode {
 	return &TreeNode{
-		text:       text,
-		color:      Styles.PrimaryTextColor,
-		indent:     2,
-		expanded:   true,
-		selectable: true,
+		text:              text,
+		textStyle:         tcell.StyleDefault.Foreground(Styles.PrimaryTextColor).Background(Styles.PrimitiveBackgroundColor),
+		selectedTextStyle: tcell.StyleDefault.Foreground(Styles.PrimitiveBackgroundColor).Background(Styles.PrimaryTextColor),
+		indent:            2,
+		expanded:          true,
+		selectable:        true,
 	}
 }
 
@@ -187,7 +191,7 @@ func (n *TreeNode) ExpandAll() *TreeNode {
 // CollapseAll collapses this node and all descendent nodes.
 func (n *TreeNode) CollapseAll() *TreeNode {
 	n.Walk(func(node, parent *TreeNode) bool {
-		n.expanded = false
+		node.expanded = false
 		return true
 	})
 	return n
@@ -204,15 +208,42 @@ func (n *TreeNode) SetText(text string) *TreeNode {
 	return n
 }
 
-// GetColor returns the node's color.
+// GetColor returns the node's text color.
 func (n *TreeNode) GetColor() tcell.Color {
-	return n.color
+	color, _, _ := n.textStyle.Decompose()
+	return color
 }
 
-// SetColor sets the node's text color.
+// SetColor sets the node's text color. For compatibility reasons, this also
+// sets the background color of the selected text style. For more control over
+// styles, use [TreeNode.SetTextStyle] and [TreeNode.SetSelectedTextStyle].
 func (n *TreeNode) SetColor(color tcell.Color) *TreeNode {
-	n.color = color
+	n.textStyle = n.textStyle.Foreground(color)
+	n.selectedTextStyle = n.selectedTextStyle.Background(color)
 	return n
+}
+
+// SetTextStyle sets the text style for this node.
+func (n *TreeNode) SetTextStyle(style tcell.Style) *TreeNode {
+	n.textStyle = style
+	return n
+}
+
+// GetTextStyle returns the text style for this node.
+func (n *TreeNode) GetTextStyle() tcell.Style {
+	return n.textStyle
+}
+
+// SetSelectedTextStyle sets the text style for this node when it is selected.
+func (n *TreeNode) SetSelectedTextStyle(style tcell.Style) *TreeNode {
+	n.selectedTextStyle = style
+	return n
+}
+
+// GetSelectedTextStyle returns the text style for this node when it is
+// selected.
+func (n *TreeNode) GetSelectedTextStyle() tcell.Style {
+	return n.selectedTextStyle
 }
 
 // SetIndent sets an additional indentation for this node's text. A value of 0
@@ -273,6 +304,9 @@ type TreeView struct {
 
 	// The currently selected node or nil if no node is selected.
 	currentNode *TreeNode
+
+	// The last note that was selected or nil of there is no such node.
+	lastNode *TreeNode
 
 	// The movement to be performed during the call to Draw(), one of the
 	// constants defined above.
@@ -345,7 +379,9 @@ func (t *TreeView) GetRoot() *TreeNode {
 // selections. Selected nodes must be visible and selectable, or else the
 // selection will be changed to the top-most selectable and visible node.
 //
-// This function does NOT trigger the "changed" callback.
+// This function does NOT trigger the "changed" callback because the actual node
+// that will be selected is not known until the tree is drawn. Triggering the
+// "changed" callback is thus deferred until the next call to [TreeView.Draw].
 func (t *TreeView) SetCurrentNode(node *TreeNode) *TreeView {
 	t.currentNode = node
 	return t
@@ -355,6 +391,35 @@ func (t *TreeView) SetCurrentNode(node *TreeNode) *TreeView {
 // currently selected.
 func (t *TreeView) GetCurrentNode() *TreeNode {
 	return t.currentNode
+}
+
+// GetPath returns all nodes located on the path from the root to the given
+// node, including the root and the node itself. If there is no root node, nil
+// is returned. If there are multiple paths to the node, a random one is chosen
+// and returned.
+func (t *TreeView) GetPath(node *TreeNode) []*TreeNode {
+	if t.root == nil {
+		return nil
+	}
+
+	var f func(current *TreeNode, path []*TreeNode) []*TreeNode
+	f = func(current *TreeNode, path []*TreeNode) []*TreeNode {
+		if current == node {
+			return path
+		}
+
+		for _, child := range current.children {
+			newPath := make([]*TreeNode, len(path), len(path)+1)
+			copy(newPath, path)
+			if p := f(child, append(newPath, child)); p != nil {
+				return p
+			}
+		}
+
+		return nil
+	}
+
+	return f(t.root, []*TreeNode{t.root})
 }
 
 // SetTopLevel sets the first tree level that is visible with 0 referring to the
@@ -402,8 +467,8 @@ func (t *TreeView) SetGraphicsColor(color tcell.Color) *TreeView {
 	return t
 }
 
-// SetChangedFunc sets the function which is called when the user navigates to
-// a new tree node.
+// SetChangedFunc sets the function which is called when the currently selected
+// node changes, for example when the user navigates to a new tree node.
 func (t *TreeView) SetChangedFunc(handler func(node *TreeNode)) *TreeView {
 	t.changed = handler
 	return t
@@ -414,6 +479,12 @@ func (t *TreeView) SetChangedFunc(handler func(node *TreeNode)) *TreeView {
 func (t *TreeView) SetSelectedFunc(handler func(node *TreeNode)) *TreeView {
 	t.selected = handler
 	return t
+}
+
+// GetSelectedFunc returns the function set with [TreeView.SetSelectedFunc]
+// or nil if no such function has been set.
+func (t *TreeView) GetSelectedFunc() func(node *TreeNode) {
+	return t.selected
 }
 
 // SetDoneFunc sets a handler which is called whenever the user presses the
@@ -456,9 +527,9 @@ func (t *TreeView) Move(offset int) *TreeView {
 }
 
 // process builds the visible tree, populates the "nodes" slice, and processes
-// pending movement actions. Set "drawingAfter" to true if you know that [Draw]
-// will be called immediately after this function (to avoid having [Draw] call
-// it again).
+// pending movement actions. Set "drawingAfter" to true if you know that
+// [TreeView.Draw] will be called immediately after this function (to avoid
+// having [TreeView.Draw] call it again).
 func (t *TreeView) process(drawingAfter bool) {
 	t.stableNodes = drawingAfter
 	_, _, _, height := t.GetInnerRect()
@@ -542,26 +613,25 @@ func (t *TreeView) process(drawingAfter bool) {
 	// Process selection. (Also trigger events if necessary.)
 	if selectedIndex >= 0 {
 		// Move the selection.
-		newSelectedIndex := selectedIndex
 		switch t.movement {
 		case treeMove:
 			for t.step < 0 { // Going up.
-				index := newSelectedIndex
+				index := selectedIndex
 				for index > 0 {
 					index--
 					if t.nodes[index].selectable {
-						newSelectedIndex = index
+						selectedIndex = index
 						break
 					}
 				}
 				t.step++
 			}
 			for t.step > 0 { // Going down.
-				index := newSelectedIndex
+				index := selectedIndex
 				for index < len(t.nodes)-1 {
 					index++
 					if t.nodes[index].selectable {
-						newSelectedIndex = index
+						selectedIndex = index
 						break
 					}
 				}
@@ -569,26 +639,18 @@ func (t *TreeView) process(drawingAfter bool) {
 			}
 		case treeParent:
 			if parentSelectedIndex >= 0 {
-				newSelectedIndex = parentSelectedIndex
+				selectedIndex = parentSelectedIndex
 			}
 		case treeChild:
-			index := newSelectedIndex
+			index := selectedIndex
 			for index < len(t.nodes)-1 {
 				index++
 				if t.nodes[index].selectable && t.nodes[index].parent == t.nodes[selectedIndex] {
-					newSelectedIndex = index
+					selectedIndex = index
 				}
 			}
 		}
-		t.step = 0
-		t.currentNode = t.nodes[newSelectedIndex]
-		if newSelectedIndex != selectedIndex {
-			t.movement = treeNone
-			if t.changed != nil {
-				t.changed(t.currentNode)
-			}
-		}
-		selectedIndex = newSelectedIndex
+		t.currentNode = t.nodes[selectedIndex]
 
 		// Move selection into viewport.
 		if t.movement != treeScroll {
@@ -597,6 +659,11 @@ func (t *TreeView) process(drawingAfter bool) {
 			}
 			if selectedIndex < t.offsetY {
 				t.offsetY = selectedIndex
+			}
+			if t.movement != treeHome && t.movement != treeEnd {
+				// treeScroll, treeHome, and treeEnd are handled by Draw().
+				t.movement = treeNone
+				t.step = 0
 			}
 		}
 	} else {
@@ -614,6 +681,12 @@ func (t *TreeView) process(drawingAfter bool) {
 			t.currentNode = nil
 		}
 	}
+
+	// Trigger "changed" callback.
+	if t.changed != nil && t.currentNode != nil && t.currentNode != t.lastNode {
+		t.changed(t.currentNode)
+	}
+	t.lastNode = t.currentNode
 }
 
 // Draw draws this primitive onto the screen.
@@ -631,7 +704,7 @@ func (t *TreeView) Draw(screen tcell.Screen) {
 	}
 
 	// Scroll the tree, t.movement is treeNone after process() when there is a
-	// selection.
+	// selection, except for treeScroll, treeHome, and treeEnd.
 	x, y, width, height := t.GetInnerRect()
 	switch t.movement {
 	case treeMove, treeScroll:
@@ -705,14 +778,14 @@ func (t *TreeView) Draw(screen tcell.Screen) {
 			// Prefix.
 			var prefixWidth int
 			if len(t.prefixes) > 0 {
-				_, prefixWidth = Print(screen, t.prefixes[(node.level-t.topLevel)%len(t.prefixes)], x+node.textX, posY, width-node.textX, AlignLeft, node.color)
+				_, _, prefixWidth = printWithStyle(screen, t.prefixes[(node.level-t.topLevel)%len(t.prefixes)], x+node.textX, posY, 0, width-node.textX, AlignLeft, node.textStyle, true)
 			}
 
 			// Text.
 			if node.textX+prefixWidth < width {
-				style := tcell.StyleDefault.Background(t.backgroundColor).Foreground(node.color)
+				style := node.textStyle
 				if node == t.currentNode {
-					style = tcell.StyleDefault.Background(node.color).Foreground(t.backgroundColor)
+					style = node.selectedTextStyle
 				}
 				printWithStyle(screen, node.text, x+node.textX+prefixWidth, posY, 0, width-node.textX-prefixWidth, AlignLeft, style, false)
 			}
