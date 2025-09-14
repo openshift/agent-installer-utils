@@ -11,8 +11,8 @@ github.com/lucasb-eyer/go-colorful v1.2.0 h1:1nnpGOrhyZZuNyfu1QjKiUICQ74+3FNCN69
 github.com/lucasb-eyer/go-colorful v1.2.0/go.mod h1:R4dSotOR9KMtayYi1e77YzuveK+i7ruzyGqttikkLy0=
 github.com/mattn/go-runewidth v0.0.14 h1:+xnbZSEeDbOIg5/mE6JF0w6n9duR1l3/WmbinWVwUuU=
 github.com/mattn/go-runewidth v0.0.14/go.mod h1:Jdepj2loyihRzMpdS35Xk/zdY8IAYHsh153qUoGf23w=
-github.com/nmstate/nmstate/rust/src/go/nmstate/v2 v2.0.0-20230118143834-39a056947abc h1:D6atMj7KUZdKBKp5P5T22K25VyztM3cmiNn8YtoK1h0=
-github.com/nmstate/nmstate/rust/src/go/nmstate/v2 v2.0.0-20230118143834-39a056947abc/go.mod h1:2vIg0rbxZID83I1TmMq1t2Rppg3kimG3fSa2MmckJp0=
+github.com/nmstate/nmstate/rust/src/go/nmstate/v2 v2.0.0-20250912115429-d8588462aa75 h1:ewPBNG62esSDr0WSfrtmAiq0CmNuvGiih76s+p4OvR4=
+github.com/nmstate/nmstate/rust/src/go/nmstate/v2 v2.0.0-20250912115429-d8588462aa75/go.mod h1:2vIg0rbxZID83I1TmMq1t2Rppg3kimG3fSa2MmckJp0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/rivo/tview v0.0.0-20230104153304-892d1a2eb0da h1:3Mh+tcC2KqetuHpWMurDeF+yOgyt4w4qtLIpwSQ3uqo=

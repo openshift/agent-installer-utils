@@ -54,7 +54,7 @@ github.com/lucasb-eyer/go-colorful
 # github.com/mattn/go-runewidth v0.0.14
 ## explicit; go 1.9
 github.com/mattn/go-runewidth
-# github.com/nmstate/nmstate/rust/src/go/nmstate/v2 v2.0.0-20230118143834-39a056947abc
+# github.com/nmstate/nmstate/rust/src/go/nmstate/v2 v2.0.0-20250912115429-d8588462aa75
 ## explicit; go 1.16
 github.com/nmstate/nmstate/rust/src/go/nmstate/v2
 # github.com/pmezard/go-difflib v1.0.0
