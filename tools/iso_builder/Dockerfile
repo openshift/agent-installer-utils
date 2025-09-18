@@ -1,5 +1,5 @@
 # Use appliance image as the base
-FROM registry.ci.openshift.org/ocp/4.20:agent-preinstall-image-builder
+FROM registry.ci.openshift.org/ocp/4.20:agent-preinstall-image-builder AS builder
 
 USER root
 
@@ -32,12 +32,11 @@ RUN /openshift-appliance build live-iso --log-level debug && rm -r /temp && rm -
 
 # Do the postprocessing step to generate the OVE ISO
 RUN dnf install -y xorriso rsync
-
 RUN --mount=type=secret,id=image_pull_secrets,target=/run/secrets/pull-secret.txt \
     /tmp/build-ove-image.sh --pull-secret-file /run/secrets/pull-secret.txt $RELEASE_FLAG $RELEASE_VALUE --dir / --step "create-iso" \
     && rm /appliance.iso && rm -rf /isomnt
 
-# Override openshift-appliance entrypoint for testing purposes
-ENTRYPOINT ["/bin/bash"]
+FROM scratch
 
-CMD ["/bin/bash", "-c", "sleep infinity"]
+# Copy final ISO as only thing from builder stage
+COPY --from=builder /agent-ove.$ARCH.iso /agent-ove.$ARCH.iso

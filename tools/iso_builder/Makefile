@@ -32,6 +32,7 @@ build-ove-iso-container:
 		--env RELEASE_FLAG="$(RELEASE_FLAG)" \
 		--env RELEASE_VALUE="$(RELEASE_VALUE)" \
 		--env MAJOR_MINOR_VERSION="$(MAJOR_MINOR_VERSION)" \
+		--env ARCH="$(ARCH)" \
 		--authfile $(PULL_SECRET_FILE) \
 		--secret id=image_pull_secrets,src=$(PULL_SECRET_FILE) \
 		--cap-add CAP_SYS_ADMIN \
