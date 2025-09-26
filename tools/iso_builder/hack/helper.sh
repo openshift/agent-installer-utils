@@ -82,8 +82,8 @@ function validate_inputs() {
         STEP="all"
     fi
 
-    if [[ "$STEP" != "all" && "$STEP" != "configure" && "$STEP" != "create-iso" ]]; then
-        echo "Error: The STEP variable must be 'all', 'configure', or 'create-iso'." >&2
+    if [[ "$STEP" != "all" && "$STEP" != "configure" ]]; then
+        echo "Error: The STEP variable must be 'all' or 'configure'." >&2
         exit 1
     fi
 
@@ -153,7 +153,7 @@ function usage() {
     echo "  --arch <architecture>          Target CPU architecture (default: x86_64)"
     echo "  --ssh-key-file <path>          Path to the SSH key file (e.g., ~/.ssh/id_rsa)"
     echo "  --dir <path>                   Path for ISOBuilder assets (default: /tmp/iso_builder)"
-    echo "  --step <step>                  Control the steps that will be invoked, options are all, configure, and create-iso (default: all)"
+    echo "  --step <step>                  Control the steps that will be invoked, options are all and configure (default: all)"
     echo ""
     echo "Examples:"
     echo "$0 --pull-secret-file ~/pull_secret.json --release-image-url registry.ci.openshift.org/ocp/release:4.19.0-0.ci-2025-04-01-173804"
