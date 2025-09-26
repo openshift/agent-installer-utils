@@ -30,12 +30,6 @@ RUN mkdir -p /etc/containers/ && \
 # Run the openshift-appliance build live-iso command during the image build process.
 RUN /openshift-appliance build live-iso --log-level debug && rm -r /temp && rm -r /cache && rm -r /root/.oc-mirror
 
-# Do the postprocessing step to generate the OVE ISO
-RUN dnf install -y xorriso rsync
-RUN --mount=type=secret,id=image_pull_secrets,target=/run/secrets/pull-secret.txt \
-    /tmp/build-ove-image.sh --pull-secret-file /run/secrets/pull-secret.txt $RELEASE_FLAG $RELEASE_VALUE --dir / --step "create-iso" \
-    && rm /appliance.iso && rm -rf /isomnt
-
 FROM scratch
 
 # Copy final ISO as only thing from builder stage
