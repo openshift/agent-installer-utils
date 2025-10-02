@@ -38,7 +38,7 @@ spec:
   - name: build-args
     value:
     - "RELEASE_FLAG=--release-image-url"
-    - "RELEASE_VALUE=quay.io/openshift-release-dev/ocp-release:4.20.0-rc.1-x86_64"
+    - "RELEASE_VALUE=registry.ci.openshift.org/ocp/release:4.20.0-0.ci-2025-10-02-061845"
     - "MAJOR_MINOR_VERSION=4.20"
     - "ARCH=x86_64"
   - name: privileged-nested
