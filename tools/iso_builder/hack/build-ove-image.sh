@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Fail on unset variables and errors
+# Fail on unset variables and errors 
 set -euo pipefail
 
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -62,7 +62,7 @@ EOF
 
 function build_live_iso() {
     if [ ! -f "${appliance_work_dir}"/appliance.iso ]; then
-       local appliance_image=registry.ci.openshift.org/ocp/4.20:agent-preinstall-image-builder
+       local appliance_image=registry.ci.openshift.org/ocp/${major_minor_version}:agent-preinstall-image-builder
         echo "Building appliance ISO (image: ${appliance_image})"
         $SUDO podman run --authfile "${PULL_SECRET_FILE}" --rm -it --privileged --pull always --net=host -v "${appliance_work_dir}"/:/assets:Z  "${appliance_image}" build live-iso --log-level debug
     else
@@ -109,7 +109,7 @@ function extract_live_iso() {
 
 function setup_agent_artifacts() {
     local image=agent-installer-ui
-    local pull_spec=registry.ci.openshift.org/ocp/4.20:"${image}"
+    local pull_spec=registry.ci.openshift.org/ocp/${major_minor_version}:"${image}"
     local image_dir="${work_dir}"/images/"${image}"
 
     if [ ! -f "${image_dir}"/"${image}".tar ]; then

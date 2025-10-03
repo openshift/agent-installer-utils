@@ -1,4 +1,5 @@
-FROM registry.ci.openshift.org/ocp/4.20:agent-preinstall-image-builder AS builder
+ARG MAJOR_MINOR_VERSION
+FROM registry.ci.openshift.org/ocp/${MAJOR_MINOR_VERSION}:agent-preinstall-image-builder AS builder
 
 # Define the arguments that will be passed in from the pipeline
 ARG RELEASE_FLAG
