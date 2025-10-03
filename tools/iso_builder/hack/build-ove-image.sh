@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Fail on unset variables and errors
+# Fail on unset variables and errors 
 set -euo pipefail
 
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
