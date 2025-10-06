@@ -72,6 +72,7 @@ function build_live_iso() {
 
 function finalize()
 {
+    cp "${appliance_work_dir}"/appliance.iso "${agent_ove_iso}"
     echo "Generated agent based installer OVE ISO at: $agent_ove_iso"
     end_time=$(date +%s)
     elapsed_time=$(($end_time - $start_time))
@@ -105,8 +106,17 @@ function build()
     "configure")
       create_appliance_config
       ;;
+    "create-iso")
+      finalize
+
+      # Remove directory to limit size of container
+      rm -r ${work_dir}
+
+      # Move to top-level dir for easier retrieval
+      mv -v ${agent_ove_iso} ${appliance_work_dir}
+      ;;
   *)
-    echo "Error: The STEP variable must be 'all' or 'configure'." >&2
+    echo "Error: The STEP variable must be 'all', 'configure', or 'create-iso'." >&2
     exit 1
     ;;
 esac
