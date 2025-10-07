@@ -7,7 +7,6 @@ Requires=run-media-iso.mount
 [Service]
 Type=oneshot
 
-ExecStartPre=/bin/bash -c "podman tag $(podman load -q -i /run/media/iso/images/agent-installer-ui/agent-installer-ui.tar | awk '{print $NF}') localhost/agent-installer-ui:latest"
 ExecStart=/bin/bash /usr/local/bin/setup-agent-tui.sh
 
 [Install]
