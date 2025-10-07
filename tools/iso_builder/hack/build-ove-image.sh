@@ -62,11 +62,118 @@ EOF
 
 function build_live_iso() {
     if [ ! -f "${appliance_work_dir}"/appliance.iso ]; then
-       local appliance_image=registry.ci.openshift.org/ocp/${major_minor_version}:agent-preinstall-image-builder
+       local appliance_image=quay.io/edge-infrastructure/openshift-appliance@sha256:82836d7a7e257e83c5065fcdb731a09b8bec7228be3ee8c9122b4b5c45463b73
         echo "Building appliance ISO (image: ${appliance_image})"
-        $SUDO podman run --authfile "${PULL_SECRET_FILE}" --rm -it --privileged --pull always --net=host -v "${appliance_work_dir}"/:/assets:Z  "${appliance_image}" build live-iso --log-level debug
+        patch_openshift_install_release_version "${full_ocp_version}"
+        $SUDO podman run --authfile "${PULL_SECRET_FILE}" --rm -it --privileged --net=host -v "${appliance_work_dir}"/:/assets:Z  --env OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE="${RELEASE_IMAGE_URL}" "${appliance_image}" build live-iso --log-level debug --debug-base-ignition
     else
         echo "Skip building appliance ISO. Reusing ${appliance_work_dir}/appliance.iso."
+    fi
+}
+
+function patch_openshift_install_release_version() {
+    local version=$1
+    local installer="${DIR_PATH}/$full_ocp_version/appliance/openshift-install"
+    CUSTOM_OPENSHIFT_INSTALLER_PATH=/home/test/go/src/github.com/openshift/installer
+    echo "Using custom openshift installer from ${CUSTOM_OPENSHIFT_INSTALLER_PATH}"
+    cp "${CUSTOM_OPENSHIFT_INSTALLER_PATH}"/bin/openshift-install "${installer}"
+
+    local res=$(grep -oba ._RELEASE_VERSION_LOCATION_.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX ${installer})
+    local location=${res%%:*}
+
+    # If the release marker was found then it means that the version is missing
+    if [[ ! -z ${location} ]]; then
+        echo "Patching openshift-install with version ${version}"
+        printf "${version}\0" | dd of=${installer} bs=1 seek=${location} conv=notrunc &> /dev/null
+        ${installer} version
+    else
+        echo "Version already patched"
+    fi
+}
+
+function extract_live_iso() {
+    local appliance_mnt_dir="${appliance_work_dir}/isomnt"
+    if [ -d "${appliance_mnt_dir}" ]; then
+        echo "Skip extracting appliance ISO. Reusing ${appliance_mnt_dir}."
+    else
+        echo "Extracting ISO contents..."
+        mkdir -p "${appliance_mnt_dir}"
+
+        if [ ! -f "${appliance_work_dir}"/appliance.iso ]; then
+            echo "Error: Issue with appliance. The appliance.iso disk image file is missing."
+            echo "${appliance_work_dir}"
+            ls -lh "${appliance_work_dir}"
+            exit 1
+        fi
+        # Mount the ISO when not in a container
+        if [ ${appliance_work_dir} != '/' ]; then
+            $SUDO mount -o loop "${appliance_work_dir}"/appliance.iso "${appliance_mnt_dir}"
+        fi
+    fi
+    if [ -d "${work_dir}" ]; then
+        echo "Skip copying extracted appliance ISO contents to a writable directory. Reusing ${work_dir}."
+    else
+        mkdir -p "${work_dir}"
+        if [ ${appliance_work_dir} == '/' ]; then
+            # Use osirrox to extract the ISO without mounting it
+            $SUDO osirrox -indev "${appliance_work_dir}"/appliance.iso -extract / "${appliance_mnt_dir}"
+        fi
+        echo "Copying extracted appliance ISO contents to a writable directory."
+        $SUDO rsync -aH --info=progress2 "${appliance_mnt_dir}/" "${work_dir}/"
+        $SUDO chown -R $(whoami):$(whoami) "${work_dir}/"
+        if mountpoint -q ${appliance_mnt_dir}; then
+            $SUDO umount ${appliance_mnt_dir}
+        fi
+    fi
+    volume_label=$(xorriso -indev "${appliance_work_dir}"/appliance.iso -toc 2>/dev/null | awk -F',' '/ISO session/ {print $4}' | xargs)
+}
+
+function setup_agent_artifacts() {
+    local image=agent-installer-ui
+    local pull_spec=registry.ci.openshift.org/ocp/4.20:"${image}"
+    local image_dir="${work_dir}"/images/"${image}"
+
+    if [ ! -f "${image_dir}"/"${image}".tar ]; then
+        # Copy assisted-installer-ui image to /images dir
+        echo "skopeo copy UI image to oci-archive:${image_dir}/${image}.tar"
+        mkdir -p "${image_dir}"
+        skopeo copy -q --authfile="${PULL_SECRET_FILE}" docker://"${pull_spec}" oci-archive:"${image_dir}"/"${image}".tar
+    else
+        echo "Skip pulling assisted-installer-ui image. Reusing ${image_dir}/${image}.tar."
+    fi
+     #copy custom assisted service image in OVE ISO
+    local image=assisted-service-late-binding
+    local pull_spec=quay.io/ppinjark/assisted-service:late-binding
+    local image_dir="${work_dir}"/images/"${image}"
+    mkdir -p "${image_dir}"
+    quay_authfile=/home/test/go/src/github.com/openshift/agent-installer-utils/tools/iso_builder/hack/quay-login.json
+    skopeo copy -q --authfile="${quay_authfile}" docker://"${pull_spec}" oci-archive:"${image_dir}"/"${image}".tar
+}
+
+function create_ove_iso() {
+    if [ ! -f "${agent_ove_iso}" ]; then
+        local boot_image=$work_dir/images/efiboot.img
+        if [ -f "${boot_image}" ]; then
+            local size=$(stat --format="%s" "${boot_image}")
+            # Calculate the number of 2048-byte sectors needed for the file
+            # Add 2047 to round up any remaining bytes to a full sector
+            local boot_load_size=$(( (size + 2047) / 2048 ))
+        else
+            echo "Error: Clean /tmp/iso_builder directory."
+            exit 1
+        fi
+
+        echo "Creating ${agent_ove_iso}."
+        xorriso -as mkisofs \
+        -o "${agent_ove_iso}" \
+        -J -R -V "${volume_label}" \
+        -b isolinux/isolinux.bin \
+        -c isolinux/boot.cat \
+        -no-emul-boot -boot-load-size 4 -boot-info-table \
+        -eltorito-alt-boot \
+        -e images/efiboot.img \
+        -no-emul-boot -boot-load-size "${boot_load_size}" \
+        "${work_dir}"
     fi
 }
 
