@@ -62,11 +62,32 @@ EOF
 
 function build_live_iso() {
     if [ ! -f "${appliance_work_dir}"/appliance.iso ]; then
-       local appliance_image=registry.ci.openshift.org/ocp/4.20:agent-preinstall-image-builder
+       local appliance_image=quay.io/edge-infrastructure/openshift-appliance@sha256:82836d7a7e257e83c5065fcdb731a09b8bec7228be3ee8c9122b4b5c45463b73
         echo "Building appliance ISO (image: ${appliance_image})"
-        $SUDO podman run --authfile "${PULL_SECRET_FILE}" --rm -it --privileged --pull always --net=host -v "${appliance_work_dir}"/:/assets:Z  "${appliance_image}" build live-iso --log-level debug
+        patch_openshift_install_release_version "${full_ocp_version}"
+        $SUDO podman run --authfile "${PULL_SECRET_FILE}" --rm -it --privileged --net=host -v "${appliance_work_dir}"/:/assets:Z  --env OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE="${RELEASE_IMAGE_URL}" "${appliance_image}" build live-iso --log-level debug --debug-base-ignition
     else
         echo "Skip building appliance ISO. Reusing ${appliance_work_dir}/appliance.iso."
+    fi
+}
+
+function patch_openshift_install_release_version() {
+    local version=$1
+    local installer="${DIR_PATH}/$full_ocp_version/appliance/openshift-install"
+    CUSTOM_OPENSHIFT_INSTALLER_PATH=/home/test/go/src/github.com/openshift/installer
+    echo "Using custom openshift installer from ${CUSTOM_OPENSHIFT_INSTALLER_PATH}"
+    cp "${CUSTOM_OPENSHIFT_INSTALLER_PATH}"/bin/openshift-install "${installer}"
+
+    local res=$(grep -oba ._RELEASE_VERSION_LOCATION_.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX ${installer})
+    local location=${res%%:*}
+
+    # If the release marker was found then it means that the version is missing
+    if [[ ! -z ${location} ]]; then
+        echo "Patching openshift-install with version ${version}"
+        printf "${version}\0" | dd of=${installer} bs=1 seek=${location} conv=notrunc &> /dev/null
+        ${installer} version
+    else
+        echo "Version already patched"
     fi
 }
 
@@ -120,6 +141,13 @@ function setup_agent_artifacts() {
     else
         echo "Skip pulling assisted-installer-ui image. Reusing ${image_dir}/${image}.tar."
     fi
+     #copy custom assisted service image in OVE ISO
+    local image=assisted-service-late-binding
+    local pull_spec=quay.io/ppinjark/assisted-service:late-binding
+    local image_dir="${work_dir}"/images/"${image}"
+    mkdir -p "${image_dir}"
+    quay_authfile=/home/test/go/src/github.com/openshift/agent-installer-utils/tools/iso_builder/hack/quay-login.json
+    skopeo copy -q --authfile="${quay_authfile}" docker://"${pull_spec}" oci-archive:"${image_dir}"/"${image}".tar
 }
 
 function create_ove_iso() {
