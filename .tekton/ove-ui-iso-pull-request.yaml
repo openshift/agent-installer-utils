@@ -30,13 +30,11 @@ spec:
     value: 5d
   - name: build-platforms
     value:
-    - linux-root/amd64
+    - linux/amd64
   - name: dockerfile
     value: Dockerfile
   - name: path-context
     value: tools/iso_builder
-  - name: privileged-nested
-    value: 'true'
   - name: release-value
     value: "quay.io/openshift-release-dev/ocp-release:4.21.0-ec.1-x86_64"
   - name: major-minor-version
@@ -371,12 +369,11 @@ spec:
         - name: kind
           value: task
         resolver: bundles
-        # Temporarily disable this for now by checking against true
       when:
       - input: $(params.skip-checks)
         operator: in
         values:
-        - "true"
+        - "false"
     - matrix:
         params:
         - name: platform
