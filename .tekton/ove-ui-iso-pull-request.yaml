@@ -41,6 +41,8 @@ spec:
     value: "quay.io/openshift-release-dev/ocp-release:4.21.0-ec.1-x86_64"
   - name: major-minor-version
     value: "4.21"
+  - name: patch-version
+    value: "0"
   pipelineSpec:
     description: |
       This pipeline is ideal for building multi-arch container images from a Containerfile while maintaining trust after pipeline customization.
@@ -118,6 +120,8 @@ spec:
     - name: release-value
       type: string
     - name: major-minor-version
+      type: string
+    - name: patch-version
       type: string
     results:
     - description: ""
@@ -231,6 +235,7 @@ spec:
           - "RELEASE_FLAG=--release-image-url"
           - "RELEASE_VALUE=$(params.release-value)"
           - "MAJOR_MINOR_VERSION=$(params.major-minor-version)"
+          - "PATCH_VERSION=$(params.patch-version)"
           - "ARCH=x86_64"
       - name: BUILD_ARGS_FILE
         value: $(params.build-args-file)
