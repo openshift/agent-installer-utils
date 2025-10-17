@@ -41,6 +41,8 @@ spec:
     value: "quay.io/openshift-release-dev/ocp-release:4.21.0-ec.1-x86_64"
   - name: major-minor-version
     value: "4.21"
+  - name: build-source-image
+    value: "true"
   pipelineSpec:
     description: |
       This pipeline is ideal for building multi-arch container images from a Containerfile while maintaining trust after pipeline customization.
@@ -355,6 +357,7 @@ spec:
           value:
           - $(params.build-platforms)
       name: clair-scan
+      timeout: "1h30m0s"
       params:
       - name: image-digest
         value: $(tasks.build-image-index.results.IMAGE_DIGEST)
@@ -371,12 +374,11 @@ spec:
         - name: kind
           value: task
         resolver: bundles
-        # Temporarily disable this for now by checking against true
       when:
       - input: $(params.skip-checks)
         operator: in
         values:
-        - "true"
+        - "false"
     - matrix:
         params:
         - name: platform
