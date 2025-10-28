@@ -121,7 +121,9 @@ function setup_vars() {
     fi
 
     work_dir="${ove_dir}/work"
+    mkdir -p "${work_dir}"
     output_dir="${ove_dir}/output"
+    mkdir -p "${output_dir}"
     agent_ove_iso="${output_dir}"/agent-ove."${ARCH}".iso
 
     mkdir -p "${output_dir}"

@@ -26,7 +26,6 @@ RUN --mount=type=secret,id=ove-ui-image-pull-secret/.dockerconfigjson \
 RUN /openshift-appliance build live-iso --log-level debug && rm -r /temp && rm -r /cache && rm -r /root/.oc-mirror
 
 # Do the postprocessing step to generate the OVE ISO
-RUN dnf install -y xorriso rsync
 RUN --mount=type=secret,id=ove-ui-image-pull-secret/.dockerconfigjson \
     /tmp/build-ove-image.sh --pull-secret-file /run/secrets/ove-ui-image-pull-secret/.dockerconfigjson ${RELEASE_FLAG} ${RELEASE_VALUE} --dir / --step "create-iso" \
     && rm /appliance.iso && rm -rf /isomnt
