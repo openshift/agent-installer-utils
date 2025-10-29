@@ -14,7 +14,6 @@ func TestCheckPageNavigation(t *testing.T) {
 	config := checks.Config{
 		ReleaseImageURL: "",
 		LogPath:         "/tmp/agent-tui.log",
-		WorkflowType:    "test",
 	}
 
 	logger := logrus.New()
