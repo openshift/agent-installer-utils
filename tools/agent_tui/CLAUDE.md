@@ -4,6 +4,8 @@
 
 Agent TUI is a Terminal User Interface for agent-based OpenShift installations. It validates that the installation environment meets prerequisites before proceeding. If all checks pass, the TUI exits and installation continues. If checks fail, users can reconfigure the environment interactively.
 
+The TUI also provides a screen for selecting a rendezvous IP address, which is used for agent-based installations to coordinate communication between nodes during the bootstrap process.
+
 ## Build and Run
 
 ### Dependencies

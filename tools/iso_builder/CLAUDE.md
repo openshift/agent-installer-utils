@@ -2,7 +2,7 @@
 
 ## Overview
 
-ISO Builder creates bootable ISO images for agent-based OpenShift installations in disconnected environments. The generated ISO includes registry images, agent TUI, web UI, and embedded agent-based installer capabilities.
+ISO Builder creates bootable ISO images for agent-based OpenShift installations in disconnected environments. The generated ISO includes a given OCP release images with a subset of OLM operators, and some additional support images.
 
 ## Prerequisites
 
