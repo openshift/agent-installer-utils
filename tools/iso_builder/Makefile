@@ -37,9 +37,6 @@ build-ove-iso-container:
 		--build-arg ARCH="$(ARCH)" \
 		--authfile $(PULL_SECRET_FILE) \
 		--secret id=ove-ui-image-pull-secret/.dockerconfigjson,src=$(PULL_SECRET_FILE) \
-		--cap-add CAP_SYS_ADMIN \
-		--cap-add CAP_NET_ADMIN \
 		--storage-driver vfs \
-		--security-opt label=type:container_runtime_t \
 		-t appliance-test \
 		-f Dockerfile
