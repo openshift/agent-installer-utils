@@ -37,11 +37,11 @@ spec:
   - name: privileged-nested
     value: 'true'
   - name: release-value
-    value: "quay.io/openshift-release-dev/ocp-release:4.20.1-x86_64"
+    value: "quay.io/openshift-release-dev/ocp-release:4.20.2-x86_64"
   - name: major-minor-version
     value: "4.20"
   - name: patch-version
-    value: "1"
+    value: "2"
   pipelineSpec:
     description: |
       This pipeline is ideal for building multi-arch container images from a Containerfile while maintaining trust after pipeline customization.
