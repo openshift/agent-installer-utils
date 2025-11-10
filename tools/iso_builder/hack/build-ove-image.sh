@@ -130,7 +130,7 @@ function extract_live_iso() {
 
 function setup_agent_artifacts() {
     local image=agent-installer-ui
-    local pull_spec=registry.ci.openshift.org/ocp/4.20:"${image}"
+    local pull_spec=registry.ci.openshift.org/ocp/4.21:"${image}"
     local image_dir="${work_dir}"/images/"${image}"
 
     if [ ! -f "${image_dir}"/"${image}".tar ]; then
@@ -141,13 +141,6 @@ function setup_agent_artifacts() {
     else
         echo "Skip pulling assisted-installer-ui image. Reusing ${image_dir}/${image}.tar."
     fi
-     #copy custom assisted service image in OVE ISO
-    local image=assisted-service-late-binding
-    local pull_spec=quay.io/ppinjark/assisted-service:late-binding
-    local image_dir="${work_dir}"/images/"${image}"
-    mkdir -p "${image_dir}"
-    quay_authfile=/home/test/go/src/github.com/openshift/agent-installer-utils/tools/iso_builder/hack/quay-login.json
-    skopeo copy -q --authfile="${quay_authfile}" docker://"${pull_spec}" oci-archive:"${image_dir}"/"${image}".tar
 }
 
 function create_ove_iso() {
