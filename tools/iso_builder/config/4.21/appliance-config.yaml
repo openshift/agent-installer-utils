@@ -33,3 +33,22 @@ operators:
       - name: cluster-kube-descheduler-operator
         channels:
           - name: stable
+      - name: metallb-operator
+        channels:
+          - name: stable
+      - name: cluster-observability-operator
+        channels:
+          - name: stable
+      - name: redhat-oadp-operator
+        channels:
+          - name: stable
+# The following operators will be included when available in catalog
+#      - name: numaresources-operator
+#        channels:
+#          - name: 4.20
+#      - name: loki-operator
+#        channels:
+#          - name: stable-6.4
+#      - name: cluster-logging
+#        channels:
+#          - name: stable-6.4
