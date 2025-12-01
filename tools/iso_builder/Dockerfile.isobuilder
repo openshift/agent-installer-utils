@@ -1,0 +1,5 @@
+FROM scratch
+
+COPY ./tools/iso_builder /src
+
+WORKDIR /src
