@@ -1,0 +1,19 @@
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Snapshot
+metadata:
+  name: ove-ui-4-20-golden-4-20-z5
+  namespace: ocp-agent-based-installer-tenant
+  labels:
+    # This label designates it as an override snapshot for manual control
+    test.appstudio.openshift.io/type: override
+    # Include the application label for filtering
+    appstudio.openshift.io/application: ove-ui-4-20
+spec:
+  application: ove-ui-4-20
+  components:
+    - name: ove-ui-iso-4-20
+      containerImage: quay.io/redhat-user-workloads/ocp-agent-based-installer-tenant/ove-ui-iso-4-20@sha256:7218e3f37f6b70c4662b128b1b611088bb6db3cc96417cc79a67547f2d252275
+      source:
+        git:
+          revision: 80490a40df063e1d44f7988d7e50989be70ae76a
+          url: https://github.com/bfournie/agent-installer-utils
