@@ -26,8 +26,6 @@ spec:
     value: '{{source_url}}'
   - name: revision
     value: '{{revision}}'
-  - name: output-image
-    value: quay.io/redhat-user-workloads/ocp-agent-based-installer-tenant/ove-ui-iso-4-20:on-pr-{{revision}}
   - name: image-expires-after
     value: 5d
   - name: build-platforms
@@ -45,6 +43,12 @@ spec:
     value: "4.20"
   - name: patch-version
     value: "6"
+  - name: git-repo
+    value: $(context.git.url)
+  - name: git-revision
+    value: $(context.git.revision)
+  - name: output-image
+    value: quay.io/redhat-user-workloads/ocp-agent-based-installer-tenant/ove-ui-iso-4-20:on-pr-{{revision}} 
   pipelineSpec:
     description: |
       This pipeline is ideal for building multi-arch container images from a Containerfile while maintaining trust after pipeline customization.
