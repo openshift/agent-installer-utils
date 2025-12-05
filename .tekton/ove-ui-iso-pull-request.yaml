@@ -38,7 +38,7 @@ spec:
   - name: privileged-nested
     value: 'true'
   - name: release-value
-    value: "quay.io/openshift-release-dev/ocp-release:4.21.0-ec.1-x86_64"
+    value: "quay.io/openshift-release-dev/ocp-release:4.21.0-ec.3-x86_64"
   - name: major-minor-version
     value: "4.21"
   - name: patch-version
