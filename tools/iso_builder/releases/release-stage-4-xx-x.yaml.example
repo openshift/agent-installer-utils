@@ -1,0 +1,13 @@
+# File to apply for stage release
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Release
+metadata:
+  name: ove-ui-4-20-release-stage-4-20-z6
+  namespace: ocp-agent-based-installer-tenant
+  labels:
+    appstudio.openshift.io/application: ove-ui-4-20
+spec:
+  # The name of the ReleasePlan that defines the promotion pipeline (e.g., stage or production pipeline).
+  releasePlan: ocp-ove-ui-iso-release-4-20-stage
+  # The name of the snapshot that maps to the tested container image
+  snapshot: ove-ui-4-20-golden-4-20-z6
