@@ -12,6 +12,7 @@ export RELEASE_IMAGE_VERSION=""
 export RELEASE_IMAGE_URL=""
 export ARCH=""
 export DIR_PATH=""
+export MIRROR_PATH=""
 
 # Check user provided params
 [[ $# -lt 2 ]] && usage
@@ -62,9 +63,23 @@ EOF
 
 function build_live_iso() {
     if [ ! -f "${appliance_work_dir}"/appliance.iso ]; then
-       local appliance_image=registry.ci.openshift.org/ocp/${major_minor_version}:agent-preinstall-image-builder
+	#local appliance_image=registry.ci.openshift.org/ocp/${major_minor_version}:agent-preinstall-image-builder
+	local appliance_image=quay.io/rwsu1/openshift-appliance:dev-scripts
         echo "Building appliance ISO (image: ${appliance_image})"
-        $SUDO podman run --authfile "${PULL_SECRET_FILE}" --rm -it --privileged --pull always --net=host -v "${appliance_work_dir}"/:/assets:Z  "${appliance_image}" build live-iso --log-level debug
+
+        # Build the podman run command with optional mirror path
+        local podman_cmd="$SUDO podman run --authfile \"${PULL_SECRET_FILE}\" --rm -it --privileged --pull always --net=host -v \"${appliance_work_dir}\"/:/assets:Z"
+        local appliance_cmd="build live-iso --log-level debug"
+
+        # Add mirror path mount and flag if provided
+        if [[ -n "${MIRROR_PATH}" ]]; then
+            echo "Using pre-mirrored images from: ${MIRROR_PATH}"
+            podman_cmd="${podman_cmd} -v \"${MIRROR_PATH}\":/mirror:Z"
+            appliance_cmd="${appliance_cmd} --mirror-path /mirror"
+        fi
+        set -x
+        eval "${podman_cmd} \"${appliance_image}\" ${appliance_cmd}"
+        set +x
     else
         echo "Skip building appliance ISO. Reusing ${appliance_work_dir}/appliance.iso."
     fi
