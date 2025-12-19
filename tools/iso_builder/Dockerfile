@@ -1,5 +1,6 @@
 ARG MAJOR_MINOR_VERSION
-FROM registry.ci.openshift.org/ocp/${MAJOR_MINOR_VERSION}:agent-preinstall-image-builder AS builder
+#FROM registry.ci.openshift.org/ocp/${MAJOR_MINOR_VERSION}:agent-preinstall-image-builder AS builder
+FROM quay.io/rwsu1/openshift-appliance:dev-scripts AS builder
 
 # Define the arguments that will be passed in from the pipeline
 ARG RELEASE_FLAG
@@ -7,6 +8,7 @@ ARG RELEASE_VALUE
 ARG MAJOR_MINOR_VERSION
 ARG PATCH_VERSION
 ARG ARCH
+ARG MIRROR_PATH
 
 # Copy the configuration script into the container
 COPY hack/build-ove-image.sh hack/helper.sh hack/logging.sh /tmp/
@@ -23,7 +25,12 @@ RUN --mount=type=secret,id=ove-ui-image-pull-secret/.dockerconfigjson \
     --dir / --step "configure"
 
 # Run the openshift-appliance build live-iso command during the image build process.
-RUN /openshift-appliance build live-iso --log-level debug && rm -r /temp && rm -r /cache && rm -r /root/.oc-mirror
+# If MIRROR_PATH is provided, pass it to skip mirroring and use pre-mirrored images
+RUN if [ -n "${MIRROR_PATH}" ]; then \
+        /openshift-appliance build live-iso --log-level debug --mirror-path /mirror && rm -r /temp && rm -r /cache; \
+    else \
+        /openshift-appliance build live-iso --log-level debug && rm -r /temp && rm -r /cache && rm -r /root/.oc-mirror; \
+    fi
 
 # Do the postprocessing step to generate the OVE ISO
 RUN --mount=type=secret,id=ove-ui-image-pull-secret/.dockerconfigjson \
