@@ -28,8 +28,9 @@ build-ove-iso:
 	hack/build-ove-image.sh $(RELEASE_FLAG) $(RELEASE_VALUE) --pull-secret-file $(PULL_SECRET_FILE)
 
 build-ove-iso-container:
-	# Build the container with specific capabilities to support podman used by openshift-appliance
+	# Build the container with specific capabilities to support skopeo used by openshift-appliance
 	@sudo buildah bud \
+		--cap-add=all \
 		--build-arg RELEASE_FLAG="$(RELEASE_FLAG)" \
 		--build-arg RELEASE_VALUE="$(RELEASE_VALUE)" \
 		--build-arg MAJOR_MINOR_VERSION="$(MAJOR_MINOR_VERSION)" \
