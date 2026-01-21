@@ -599,4 +599,13 @@ spec:
         resources:
           requests:
             storage: 50Gi  # Increase this to fit the ISO
+  taskRunSpecs:
+    - pipelineTaskName: build-images
+      stepSpecs:
+        - name: build
+          computeResources:
+            requests:
+              memory: 8Gi  # Request 8GB or more as needed
+            limits:
+              memory: 8Gi
 status: {}
