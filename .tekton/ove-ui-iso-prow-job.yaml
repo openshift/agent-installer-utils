@@ -1,10 +1,10 @@
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: provide-prowjob
+  name: abi-ove-konflux-prow-integration
 spec:
   description: >-
-    Run a parameterized prowjob using gangway.
+    Run Prow jobs for testing the ove-ui-iso-4-21 konflux component.
   params:
     - name: GANGWAY_TOKEN
       type: string
@@ -12,22 +12,26 @@ spec:
       default: gangway-token
     - description: 'Snapshot of the application'
       name: SNAPSHOT
-      default: '{"components": [{"name":"test-app", "containerImage": "quay.io/example/repo:latest"}]}'
+      default: '{"components": [{"name":"ove-ui-iso-4-21", "containerImage": "http://quay.io/redhat-user-workloads/ocp-agent-based-installer-tenant/ove-ui-iso-4-21:latest"}]}'
       type: string
   tasks:
-    - name: provide-prowjob
-      displayName: "Running prowjob $(params.PROWJOB_NAME)"
+    - name: prowjob-ove421
+      displayName: "Running prow job $(params.PROWJOB_NAME)"
+      timeout: "5h"
       taskRef:
         resolver: git
         params:
         - name: url
           value: https://github.com/openshift/konflux-tasks
         - name: revision
-          value: main
+          value: 3adee771363d48fdb832582e5b9308923b7c8faa
         - name: pathInRepo
           value: tasks/provide-prowjob/0.1/provide-prowjob.yaml
       params:
         - name: SNAPSHOT
           value: $(params.SNAPSHOT)
-        - name: PROWJOB_NAME
-          value: periodic-ci-openshift-eng-baremetal-qe-infra-monitoring-baremetal-lab-agent-monitoring
+      matrix:
+        params:
+          - name: PROWJOB_NAME
+            value:
+              - periodic-ci-openshift-eng-baremetal-qe-infra-monitoring-baremetal-lab-agent-monitoring
