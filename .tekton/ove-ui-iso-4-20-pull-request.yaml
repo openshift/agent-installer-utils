@@ -597,4 +597,13 @@ spec:
   - name: git-auth
     secret:
       secretName: '{{ git_auth_secret }}'
+  taskRunSpecs:
+    - pipelineTaskName: build-images
+      stepSpecs:
+        - name: build
+          computeResources:
+            requests:
+              memory: 8Gi  # Request 8GB or more as needed
+            limits:
+              memory: 8Gi
 status: {}
