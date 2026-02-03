@@ -31,7 +31,7 @@ spec:
         - name: SNAPSHOT
           value: $(params.SNAPSHOT)
         - name: VARIANT
-          value: ocp421
+          value: ''
       matrix:
         params:
           - name: PROWJOB_NAME
