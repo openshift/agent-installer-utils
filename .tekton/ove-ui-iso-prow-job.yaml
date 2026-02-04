@@ -38,4 +38,4 @@ spec:
         params:
           - name: PROWJOB_NAME
             value:
-              - periodic-ci-openshift-agent-installer-utils-release-4.19-e2e-agent-compact-ipv4-iso-no-registry-periodic
+              - pull-ci-openshift-agent-installer-utils-release-4.21-e2e-agent-compact-ipv4-iso-no-registry
