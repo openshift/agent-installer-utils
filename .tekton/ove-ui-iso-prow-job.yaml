@@ -34,8 +34,10 @@ spec:
           value: ''
         - name: ARTIFACTS_BUILD_ROOT
           value: quay-proxy.ci.openshift.org/openshift/ci:openshift_release_rhel-9-release-golang-1.23-openshift-4.19
+        - name: TARGET_BRANCH
+          value: release-4.19
       matrix:
         params:
           - name: PROWJOB_NAME
             value:
-              - pull-ci-openshift-agent-installer-utils-release-4.21-e2e-agent-compact-ipv4
+              - periodic-ci-openshift-agent-installer-utils-release-4.19-e2e-agent-compact-ipv4-iso-no-registry-periodic
