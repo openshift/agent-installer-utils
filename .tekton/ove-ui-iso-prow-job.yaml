@@ -22,9 +22,9 @@ spec:
         resolver: git
         params:
         - name: url
-          value: https://github.com/openshift/konflux-tasks
+          value: https://github.com/bmanzari/konflux-tasks
         - name: revision
-          value: 3adee771363d48fdb832582e5b9308923b7c8faa
+          value: f2a528685cb1f690187ec6b939fa456e569b5384
         - name: pathInRepo
           value: tasks/provide-prowjob/0.1/provide-prowjob.yaml
       params:
