@@ -45,13 +45,12 @@ operators:
       - name: local-storage-operator
         channels:
           - name: stable
-# The following operators will be included when available in catalog
-#      - name: numaresources-operator
-#        channels:
-#          - name: 4.20
-#      - name: loki-operator
-#        channels:
-#          - name: stable-6.4
-#      - name: cluster-logging
-#        channels:
-#          - name: stable-6.4
+      - name: numaresources-operator
+        channels:
+          - name: "4.21"
+      - name: loki-operator
+        channels:
+          - name: stable-6.4
+      - name: cluster-logging
+        channels:
+          - name: stable-6.4
