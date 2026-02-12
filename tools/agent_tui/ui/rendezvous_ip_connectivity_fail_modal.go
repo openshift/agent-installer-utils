@@ -7,9 +7,9 @@ import (
 
 const (
 	PAGE_RENDEZVOUS_IP_CONNECTIVITY_FAIL string = "rendezvousIPConnectivityFailPage"
-	SAVE_AND_CONTINUE_BUTTON                    = "<Save and Continue>"
+	SAVE_AND_CONTINUE_BUTTON             string = "<Save and Continue>"
 
-	CONNECTIVITY_CHECK_FAIL_TEXT_FORMAT = "Warning: the specified rendezvous IP was not found or yet active."
+	CONNECTIVITY_CHECK_FAIL_TEXT_FORMAT string = "Warning: the specified rendezvous IP was not found or yet active."
 )
 
 func (u *UI) showRendezvousIPConnectivityFailModal(ipAddress string, focusForBackButton func()) {

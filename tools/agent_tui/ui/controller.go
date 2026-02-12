@@ -9,9 +9,8 @@ type Controller struct {
 	ui      *UI
 	channel chan checks.CheckResult
 
-	checks          map[string]checks.CheckResult
-	state           bool
-	rendezvousIPSet bool
+	checks map[string]checks.CheckResult
+	state  bool
 }
 
 func NewController(ui *UI) *Controller {
