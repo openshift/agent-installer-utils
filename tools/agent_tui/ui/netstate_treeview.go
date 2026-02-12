@@ -46,12 +46,14 @@ func getRouteTree(route net.Route) *tview.TreeNode {
 	return root
 }
 
-func (u *UI) ModalTreeView(netState net.NetState) (tview.Primitive, error) {
+// ModalTreeView creates a centered modal dialog containing a network state tree view.
+// The doneFunc callback specifies where to navigate after the user exits the tree view.
+func (u *UI) ModalTreeView(netState net.NetState, doneFunc func()) (tview.Primitive, error) {
 	if u.pages == nil {
 		return nil, fmt.Errorf("can't make a NetState treeView page for nil pages")
 	}
 
-	treeView, err := u.TreeView(netState)
+	treeView, err := u.TreeView(netState, doneFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +67,11 @@ func (u *UI) ModalTreeView(netState net.NetState) (tview.Primitive, error) {
 		AddItem(nil, 0, 1, false), err
 }
 
-func (u *UI) TreeView(netState net.NetState) (*tview.TreeView, error) {
+// TreeView creates a tree view for displaying network state information.
+// The doneFunc callback is called when the user exits the tree view (via 'q' key or ESC).
+// This allows the caller to specify where to navigate after exiting, ensuring the user
+// returns to the correct page (e.g., checks page vs rendezvous IP page).
+func (u *UI) TreeView(netState net.NetState, doneFunc func()) (*tview.TreeView, error) {
 	if u.pages == nil {
 		return nil, fmt.Errorf("can't make a NetState treeView page for nil pages")
 	}
@@ -76,7 +82,8 @@ func (u *UI) TreeView(netState net.NetState) (*tview.TreeView, error) {
 		SetCurrentNode(root).SetDoneFunc(
 		func(key tcell.Key) {
 			u.pages.RemovePage("netstate")
-			u.setFocusToChecks()
+			// Navigate back to the caller's page (checks or rendezvous IP)
+			doneFunc()
 		})
 
 	tree.SetTitle("Network Status").
@@ -89,7 +96,8 @@ func (u *UI) TreeView(netState net.NetState) (*tview.TreeView, error) {
 		func(event *tcell.EventKey) *tcell.EventKey {
 			if event.Rune() == 'q' {
 				u.pages.RemovePage("netstate")
-				u.setFocusToChecks()
+				// Navigate back to the caller's page (checks or rendezvous IP)
+				doneFunc()
 			}
 			return event
 		})

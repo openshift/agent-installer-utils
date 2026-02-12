@@ -39,13 +39,13 @@ func (c *Controller) receivedPrimaryCheck(numChecks int) bool {
 	return found
 }
 
-func (c *Controller) Init(numChecks int, rendezvousIP string) {
-	c.ui.ShowSplashScreen()
-
-	if rendezvousIP == "" {
-		c.ui.setFocusToRendezvousIP()
+func (c *Controller) Init(numChecks int, rendezvousIP string, interactiveUIMode bool) {
+	if interactiveUIMode {
+		// NoRegistry (OVE) ISO flow - show rendezvous IP page
+		c.ui.ShowRendezvousIPPage(rendezvousIP)
 	} else {
-		c.ui.setFocusToChecks()
+		// Agent ISO flow - show splash screen while collecting initial check results
+		c.ui.ShowSplashScreen()
 	}
 
 	go func() {
