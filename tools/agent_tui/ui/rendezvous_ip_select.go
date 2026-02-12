@@ -26,7 +26,7 @@ func (u *UI) createSelectHostIPPage() {
 		u.selectIPList.SetInputCapture(getSelectIPListInputCapture(u.selectIPList))
 	}
 
-	descriptionText := fmt.Sprintf("Select an IP address from this node to be the rendezvous node IP.")
+	descriptionText := "Select an IP address from this node to be the rendezvous node IP."
 	textFlex := u.createTextFlex(descriptionText)
 	textRows := 3
 
@@ -82,9 +82,7 @@ func getSelectIPListInputCapture(list *tview.List) (capture func(event *tcell.Ev
 		// List.GetCurrentItem actually returns not the current selected item but the
 		// item that was last selected
 		previousItemIndex := list.GetCurrentItem()
-		previousItem, _ := list.GetItemText(previousItemIndex)
-		currentItem := previousItem
-		updatedItemIndex := previousItemIndex
+
 		switch event.Key() {
 		case tcell.KeyTab, tcell.KeyDown, tcell.KeyRight:
 			currentItemIndex := previousItemIndex + 1
@@ -92,10 +90,10 @@ func getSelectIPListInputCapture(list *tview.List) (capture func(event *tcell.Ev
 				// reached the bottom of the selectIPList
 				currentItemIndex = 0
 			}
-			currentItem, _ = list.GetItemText(currentItemIndex)
+			currentItem, _ := list.GetItemText(currentItemIndex)
 			if currentItem == EMPTY_OPTION {
 				// move the current index up one place to skip the EMPTY_OPTION
-				updatedItemIndex = currentItemIndex
+				updatedItemIndex := currentItemIndex
 				if updatedItemIndex > list.GetItemCount() {
 					// reached the bottom of the list
 					updatedItemIndex = 0
@@ -108,10 +106,10 @@ func getSelectIPListInputCapture(list *tview.List) (capture func(event *tcell.Ev
 				// reached the top of the selectIPList
 				currentItemIndex = list.GetItemCount() - 1
 			}
-			currentItem, _ = list.GetItemText(currentItemIndex)
+			currentItem, _ := list.GetItemText(currentItemIndex)
 			if currentItem == EMPTY_OPTION {
 				// move the current index down one place to skip the EMPTY_OPTION
-				updatedItemIndex = currentItemIndex
+				updatedItemIndex := currentItemIndex
 				if updatedItemIndex < 0 {
 					updatedItemIndex = list.GetItemCount() - 1
 				}
