@@ -17,7 +17,7 @@ operators:
           - name: stable
       - name: mtv-operator
         channels:
-          - name: release-v2.8
+          - name: release-v2.11
       - name: kubernetes-nmstate-operator
         channels:
           - name: stable
