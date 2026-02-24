@@ -9,8 +9,8 @@ import (
 
 const (
 	PAGE_RENDEZVOUS_IP_SAVE_SUCCESS string = "rendezvousIPSaveSuccessPage"
-	CONTINUE_BUTTON                        = "<Continue>"
-	BACK_BUTTON                            = "<Back>"
+	CONTINUE_BUTTON                 string = "<Continue>"
+	BACK_BUTTON                     string = "<Back>"
 
 	SUCCESS_TEXT_FORMAT     = "Successfully saved %s as the rendezvous node IP. "
 	OTHER_NODES_TEXT_FORMAT = "Enter %s as the rendezvous node IP on the other nodes that will form the cluster."
