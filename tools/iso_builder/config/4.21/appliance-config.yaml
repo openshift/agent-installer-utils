@@ -16,9 +16,6 @@ operators:
       - name: kubevirt-hyperconverged
         channels:
           - name: stable
-      - name: mtv-operator
-        channels:
-          - name: release-v2.8
       - name: kubernetes-nmstate-operator
         channels:
           - name: stable
@@ -55,3 +52,8 @@ operators:
       - name: cluster-logging
         channels:
           - name: stable-6.4
+  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.20
+    packages:
+      - name: mtv-operator
+        channels:
+          - name: release-v2.10
