@@ -12,6 +12,8 @@ export RELEASE_IMAGE_VERSION=""
 export RELEASE_IMAGE_URL=""
 export ARCH=""
 export DIR_PATH=""
+export MIRROR_PATH=""
+export REGISTRY_CERT=""
 
 # Check user provided params
 [[ $# -lt 2 ]] && usage
@@ -55,6 +57,12 @@ sshKey: '$(cat "${SSH_KEY_FILE}")'
 EOF
         fi
 
+        if [[ -n "$MIRROR_PATH" ]]; then
+            cat << EOF >> ${cfg}
+mirrorPath: /mirror
+EOF
+        fi
+
     else
         echo "Skip creating appliance config. Reusing ${appliance_work_dir}/appliance-config.yaml"
     fi
@@ -62,9 +70,33 @@ EOF
 
 function build_live_iso() {
     if [ ! -f "${appliance_work_dir}"/appliance.iso ]; then
-       local appliance_image=registry.ci.openshift.org/ocp/${major_minor_version}:agent-preinstall-image-builder
+        local appliance_image=registry.ci.openshift.org/ocp/${major_minor_version}:agent-preinstall-image-builder
         echo "Building appliance ISO (image: ${appliance_image})"
-        $SUDO podman run --authfile "${PULL_SECRET_FILE}" --rm -it --privileged --pull always --net=host -v "${appliance_work_dir}"/:/assets:Z  "${appliance_image}" build live-iso --log-level debug
+
+        # Build the podman run command with optional mirror path
+        local podman_cmd="$SUDO podman run --authfile \"${PULL_SECRET_FILE}\" --rm -it --privileged --pull always --net=host -v \"${appliance_work_dir}\"/:/assets:Z"
+        local appliance_cmd="build live-iso --log-level debug"
+
+        # Add mirror path mount if provided
+        if [[ -n "${MIRROR_PATH}" ]]; then
+            echo "Using pre-mirrored images from: ${MIRROR_PATH}"
+            podman_cmd="${podman_cmd} -v \"${MIRROR_PATH}\":/mirror:Z"
+        fi
+
+        # Add registry certificate mount if provided (for custom registries with self-signed certs)
+        if [[ -n "${REGISTRY_CERT}" ]]; then
+            echo "Mounting registry certificate for TLS verification: ${REGISTRY_CERT}"
+            podman_cmd="${podman_cmd} -v \"${REGISTRY_CERT}\":/etc/pki/ca-trust/source/anchors/registry.crt:Z,ro"
+            # Override entrypoint to run update-ca-trust before openshift-appliance
+            # Must include --dir /assets to match the volume mount
+            # Workaround: Move appliance.iso to /assets if it was created in wrong location
+            podman_cmd="${podman_cmd} --entrypoint sh"
+            appliance_cmd="-c 'update-ca-trust && /openshift-appliance --dir /assets ${appliance_cmd} ; if [ -f /appliance.iso ] && [ ! -f /assets/appliance.iso ]; then mv /appliance.iso /assets/appliance.iso; fi'"
+        fi
+
+        set -x
+        eval "${podman_cmd} \"${appliance_image}\" ${appliance_cmd}"
+        set +x
     else
         echo "Skip building appliance ISO. Reusing ${appliance_work_dir}/appliance.iso."
     fi
