@@ -6,7 +6,6 @@ import (
 	"os/exec"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/openshift/agent-installer-utils/tools/agent_tui/checks"
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/newt"
 	"github.com/rivo/tview"
 )
@@ -32,7 +31,7 @@ func (u *UI) createTextFlex(text string) *tview.Flex {
 	return flex
 }
 
-func (u *UI) createRendezvousIPPage(config checks.Config) {
+func (u *UI) createRendezvousIPPage() {
 	u.rendezvousIPForm = tview.NewForm()
 	u.rendezvousIPForm.SetBorder(false)
 	u.rendezvousIPForm.SetButtonsAlign(tview.AlignCenter)
@@ -41,7 +40,7 @@ func (u *UI) createRendezvousIPPage(config checks.Config) {
 	rendezvousTextFlex := u.createTextFlex(rendezvousIPFormDescription)
 	rendezvousTextNumRows := 8
 
-	u.rendezvousIPForm.AddInputField(FIELD_ENTER_RENDEZVOUS_IP, "", 55, nil, nil)
+	u.rendezvousIPForm.AddInputField(FIELD_ENTER_RENDEZVOUS_IP, u.initialRendezvousIP, 55, nil, nil)
 	u.rendezvousIPForm.SetFieldTextColor(newt.ColorGray)
 
 	u.rendezvousIPForm.AddButton(SAVE_RENDEZVOUS_IP_BUTTON, func() {
@@ -84,31 +83,55 @@ func (u *UI) createRendezvousIPPage(config checks.Config) {
 	u.selectIPForm.SetButtonStyle(tcell.StyleDefault.Background(newt.ColorGray).
 		Foreground(newt.ColorBlack))
 
-	mainFlex := tview.NewFlex().
+	// Add a seperator
+	separator := tview.NewTextView()
+	separator.SetText("────────────────────────────────────────────────────────────────────────────")
+	separator.SetTextAlign(tview.AlignCenter)
+	separator.SetTextColor(newt.ColorBlack)
+	separator.SetBackgroundColor(newt.ColorGray)
+
+	// Add 'Configure Network' button at bottom right
+	u.configureNetworkForm = tview.NewForm()
+	u.configureNetworkForm.SetBorder(false)
+	u.configureNetworkForm.SetButtonsAlign(tview.AlignRight)
+	u.configureNetworkForm.AddButton(RENDEZVOUS_CONFIGURE_NETWORK_BUTTON, func() {
+		u.showNMTUIWithErrorDialog(func() {
+			u.setFocusToRendezvousIP()
+		})
+	})
+	u.configureNetworkForm.SetButtonActivatedStyle(tcell.StyleDefault.Background(newt.ColorRed).
+		Foreground(newt.ColorGray))
+	u.configureNetworkForm.SetButtonStyle(tcell.StyleDefault.Background(newt.ColorGray).
+		Foreground(newt.ColorBlack))
+
+	u.rendezvousIPMainFlex = tview.NewFlex().
 		SetDirection(tview.FlexRow).
 		AddItem(rendezvousTextFlex, rendezvousTextNumRows, 0, false).
 		AddItem(u.rendezvousIPForm, 5, 0, false).
 		AddItem(selectTextFlex, selectTextNumRows, 0, false).
-		AddItem(u.selectIPForm, 4, 0, false)
-	mainFlex.SetTitle("  Rendezvous node setup  ").
+		AddItem(u.selectIPForm, 3, 0, false).
+		AddItem(separator, 1, 0, false).
+		AddItem(u.configureNetworkForm, 3, 0, false)
+	u.rendezvousIPMainFlex.SetTitle("  Rendezvous node setup  ").
 		SetTitleColor(newt.ColorRed).
 		SetBorder(true)
 
+	mainFlexHeight := 5 + 3 + 1 + 3 // form + selectIPForm + separator + configureNetworkForm
 	innerFlex := tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(nil, 0, 1, false).
-		AddItem(mainFlex, mainFlexHeight+1+rendezvousTextNumRows+selectTextNumRows, 0, false).
+		AddItem(u.rendezvousIPMainFlex, mainFlexHeight+2+rendezvousTextNumRows+selectTextNumRows, 0, false).
 		AddItem(nil, 0, 1, false)
 
 	// Allow the user to cycle the focus only over the configured items
-	mainFlex.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	u.rendezvousIPMainFlex.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
-		case tcell.KeyTab, tcell.KeyUp:
+		case tcell.KeyTab, tcell.KeyDown:
 			u.focusedItem++
 			if u.focusedItem > len(u.focusableItems)-1 {
 				u.focusedItem = 0
 			}
 
-		case tcell.KeyBacktab, tcell.KeyDown:
+		case tcell.KeyBacktab, tcell.KeyUp:
 			u.focusedItem--
 			if u.focusedItem < 0 {
 				u.focusedItem = len(u.focusableItems) - 1
@@ -129,7 +152,10 @@ func (u *UI) createRendezvousIPPage(config checks.Config) {
 		AddItem(innerFlex, width, 1, false).
 		AddItem(nil, 0, 1, false)
 
-	u.pages.AddPage(PAGE_RENDEZVOUS_IP, flex, true, true)
+	// Add page as initially hidden (visible: false) during UI creation.
+	// The controller will explicitly show this page via ShowRendezvousIPPage() in interactive mode.
+	// This prevents the rendezvous page from being the default visible page in non-interactive mode.
+	u.pages.AddPage(PAGE_RENDEZVOUS_IP, flex, true, false)
 }
 
 func validateIP(ipAddress string) string {
