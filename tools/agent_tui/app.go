@@ -15,7 +15,26 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func App(app *tview.Application, rendezvousIP string, config checks.Config, checkFuncs ...checks.CheckFunctions) {
+// AppContext contains all the configuration and state needed to run the agent TUI application
+type AppContext struct {
+	// App is the tview application instance. If nil, a new one will be created.
+	App *tview.Application
+	// RendezvousIP is the pre-configured rendezvous IP address, if available
+	RendezvousIP string
+	// InteractiveUIMode indicates whether the interactive UI is enabled
+	InteractiveUIMode bool
+	// Config contains the checks configuration
+	Config checks.Config
+	// CheckFuncs allows injecting custom check implementations for testing
+	CheckFuncs []checks.CheckFunctions
+}
+
+func App(ctx AppContext) {
+	app := ctx.App
+	rendezvousIP := ctx.RendezvousIP
+	interactiveUIMode := ctx.InteractiveUIMode
+	config := ctx.Config
+	checkFuncs := ctx.CheckFuncs
 
 	if err := prepareConfig(&config); err != nil {
 		log.Fatal(err)
@@ -34,6 +53,7 @@ func App(app *tview.Application, rendezvousIP string, config checks.Config, chec
 	logger.Infof("Agent TUI git version: %s", version.Commit)
 	logger.Infof("Agent TUI build version: %s", version.Raw)
 	logger.Infof("Rendezvous IP: %s", rendezvousIP)
+	logger.Infof("Interactive UI Mode: %v", interactiveUIMode)
 
 	var appUI *ui.UI
 	if app == nil {
@@ -54,11 +74,11 @@ func App(app *tview.Application, rendezvousIP string, config checks.Config, chec
 
 		app = tview.NewApplication()
 	}
-	appUI = ui.NewUI(app, config, logger)
+	appUI = ui.NewUI(app, config, logger, rendezvousIP)
 	controller := ui.NewController(appUI)
 	engine := checks.NewEngine(controller.GetChan(), config, logger, checkFuncs...)
 
-	controller.Init(engine.Size(), rendezvousIP)
+	controller.Init(engine.Size(), rendezvousIP, interactiveUIMode)
 	engine.Init()
 	if err := app.Run(); err != nil {
 		log.Fatal(err)

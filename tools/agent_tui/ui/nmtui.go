@@ -11,7 +11,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-func (u *UI) ShowNMTUI() error {
+func (u *UI) ShowNMTUI(doneFunc func()) error {
 	u.nmtuiActive.Store(true)
 	defer u.nmtuiActive.Store(false)
 
@@ -38,7 +38,7 @@ func (u *UI) ShowNMTUI() error {
 		return err
 	}
 
-	netStatePage, err := u.ModalTreeView(netState)
+	netStatePage, err := u.ModalTreeView(netState, doneFunc)
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func (u *UI) ShowNMTUI() error {
 }
 
 func (u *UI) showNMTUIWithErrorDialog(doneFunc func()) {
-	if err := u.ShowNMTUI(); err != nil {
+	if err := u.ShowNMTUI(doneFunc); err != nil {
 		u.logger.Infof("error from ShowNMTUI: %v", err)
 		errorDialog := tview.NewModal().
 			SetBackgroundColor(newt.ColorGray).
