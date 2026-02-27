@@ -23,6 +23,7 @@ function parse_inputs() {
             --arch) ARCH="$2"; shift ;;
             --pull-secret-file) PULL_SECRET_FILE="$2"; shift ;;
             --ssh-key-file) SSH_KEY_FILE="$2"; shift ;;
+            --appliance-image) APPLIANCE_IMAGE="$2"; shift ;;
             --dir) DIR_PATH="$2"; shift ;;
             --step) STEP="$2"; shift ;;
             *) 
