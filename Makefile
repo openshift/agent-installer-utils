@@ -3,7 +3,7 @@ SOURCE_GIT_COMMIT ?= $(shell git rev-parse --verify 'HEAD^{commit}')
 BUILD_VERSION ?= $(shell git describe --always --abbrev=40 --dirty)
 
 VERSION_URI ?= github.com/openshift/agent-installer-utils/pkg/version
-RELEASE_IMAGE ?= quay.io/openshift-release-dev/ocp-release:4.18.4-x86_64
+RELEASE_IMAGE ?= quay.io/openshift-release-dev/ocp-release:4.21.1-x86_64
 ARCH ?= x86_64
 
 .PHONY:clean
@@ -13,6 +13,10 @@ clean:
 .PHONY: lint
 lint:
 	golangci-lint run -v
+
+.PHONY: test                                                                                                                                                                                   
+test:                                                                                                                                                                                                 
+	cd tools/agent_tui && go test -v ./...                                                                                                                                                       
 
 .PHONY: build
 build: clean lint

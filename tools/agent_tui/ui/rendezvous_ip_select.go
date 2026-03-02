@@ -49,7 +49,10 @@ func (u *UI) createSelectHostIPPage() {
 		AddItem(innerFlex, width, 1, false).
 		AddItem(nil, 0, 1, false)
 
-	u.pages.AddPage(PAGE_SET_NODE_AS_RENDEZVOUS, flex, true, true)
+	// Add page as initially hidden (visible: false) during UI creation.
+	// This page is shown later when the user clicks "This is the rendezvous node" button.
+	// Setting visible: false prevents this from being the default visible page.
+	u.pages.AddPage(PAGE_SET_NODE_AS_RENDEZVOUS, flex, true, false)
 }
 
 func (u *UI) hostIPAddresses() []string {
@@ -135,7 +138,7 @@ func (u *UI) updateSelectIPList(ipAddresses []string) {
 		// only add spacer line if there are IP addresses
 		options = append(options, EMPTY_OPTION)
 	}
-	options = append(options, backOption, RENDEZVOUS_CONFIGURE_NETWORK_BUTTON)
+	options = append(options, backOption)
 	for _, selected := range options {
 		u.selectIPList.AddItem(selected, "", rune(0), func() {
 			switch selected {
@@ -143,12 +146,6 @@ func (u *UI) updateSelectIPList(ipAddresses []string) {
 				// spacing between IP addresses and buttons
 			case backOption:
 				u.setFocusToRendezvousIP()
-			case RENDEZVOUS_CONFIGURE_NETWORK_BUTTON:
-				u.showNMTUIWithErrorDialog(func() {
-					u.refreshSelectIPList()
-					u.setFocusToSelectIP()
-				})
-				u.setFocusToSelectIP()
 			default:
 				err := u.saveRendezvousIPAddress(selected)
 				if err != nil {
