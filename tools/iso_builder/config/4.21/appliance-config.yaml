@@ -11,14 +11,14 @@ imageRegistry:
 additionalImages:
   - name: registry.redhat.io/rhel9/support-tools:latest
 operators:
-  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.20
+  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.21
     packages:
       - name: kubevirt-hyperconverged
         channels:
           - name: stable
       - name: mtv-operator
         channels:
-          - name: release-v2.10
+          - name: release-v2.11
       - name: kubernetes-nmstate-operator
         channels:
           - name: stable
@@ -48,7 +48,7 @@ operators:
           - name: stable
       - name: numaresources-operator
         channels:
-          - name: "4.20"
+          - name: "4.21"
       - name: loki-operator
         channels:
           - name: stable-6.4
