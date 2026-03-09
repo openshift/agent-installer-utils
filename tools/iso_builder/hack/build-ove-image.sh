@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Temp
 # Fail on unset variables and errors 
 set -euo pipefail
 
