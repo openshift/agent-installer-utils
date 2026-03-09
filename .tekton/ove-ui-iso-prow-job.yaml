@@ -1,0 +1,43 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: abi-ove-konflux-prow-integration
+spec:
+  description: >-
+    Run Prow jobs for testing the ove-ui-iso-4-21 konflux component.
+  params:
+    - name: GANGWAY_TOKEN
+      type: string
+      description: Token to authenticate with gangway
+      default: gangway-token
+    - description: 'Snapshot of the application'
+      name: SNAPSHOT
+      default: '{"components": [{"name":"ove-ui-iso-4-21", "containerImage": "http://quay.io/redhat-user-workloads/ocp-agent-based-installer-tenant/ove-ui-iso-4-21:latest"}]}'
+      type: string
+  tasks:
+    - name: prowjob-ove421
+      displayName: "Running prow job $(params.PROWJOB_NAME)"
+      timeout: "5h"
+      taskRef:
+        resolver: git
+        params:
+        - name: url
+          value: https://github.com/bmanzari/konflux-tasks
+        - name: revision
+          value: f2a528685cb1f690187ec6b939fa456e569b5384
+        - name: pathInRepo
+          value: tasks/provide-prowjob/0.1/provide-prowjob.yaml
+      params:
+        - name: SNAPSHOT
+          value: $(params.SNAPSHOT)
+        - name: VARIANT
+          value: ''
+        - name: ARTIFACTS_BUILD_ROOT
+          value: quay-proxy.ci.openshift.org/openshift/ci:openshift_release_rhel-9-release-golang-1.23-openshift-4.19
+        - name: TARGET_BRANCH
+          value: release-4.19
+      matrix:
+        params:
+          - name: PROWJOB_NAME
+            value:
+              - periodic-ci-openshift-agent-installer-utils-release-4.19-e2e-agent-compact-ipv4-iso-no-registry-periodic
