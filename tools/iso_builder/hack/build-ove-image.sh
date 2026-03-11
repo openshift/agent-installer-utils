@@ -12,6 +12,7 @@ export RELEASE_IMAGE_VERSION=""
 export RELEASE_IMAGE_URL=""
 export ARCH=""
 export DIR_PATH=""
+export APPLIANCE_IMAGE=""
 
 # Check user provided params
 [[ $# -lt 2 ]] && usage
@@ -62,7 +63,7 @@ EOF
 
 function build_live_iso() {
     if [ ! -f "${appliance_work_dir}"/appliance.iso ]; then
-       local appliance_image=registry.ci.openshift.org/ocp/${major_minor_version}:agent-preinstall-image-builder
+       local appliance_image="${APPLIANCE_IMAGE:-registry.ci.openshift.org/ocp/${major_minor_version}:agent-preinstall-image-builder}"
         echo "Building appliance ISO (image: ${appliance_image})"
         $SUDO podman run --authfile "${PULL_SECRET_FILE}" --rm -it --privileged --pull always --net=host -v "${appliance_work_dir}"/:/assets:Z  "${appliance_image}" build live-iso --log-level debug
     else
