@@ -56,6 +56,23 @@ sshKey: '$(cat "${SSH_KEY_FILE}")'
 EOF
         fi
 
+        if [[ -n "${FEATURE_SET:-}" ]]; then
+            cat << EOF >> ${cfg}
+featureSet: ${FEATURE_SET}
+EOF
+        fi
+
+        if [[ -n "${FEATURE_GATES:-}" ]]; then
+            cat << EOF >> ${cfg}
+featureGates:
+EOF
+            # Split comma-separated FEATURE_GATES into array and output as YAML list
+            IFS=',' read -ra GATES <<< "${FEATURE_GATES}"
+            for gate in "${GATES[@]}"; do
+                echo "  - ${gate}" >> ${cfg}
+            done
+        fi
+
     else
         echo "Skip creating appliance config. Reusing ${appliance_work_dir}/appliance-config.yaml"
     fi
