@@ -38,4 +38,4 @@ spec:
         params:
           - name: PROWJOB_NAME
             value:
-              - periodic-ci-openshift-eng-agent-qe-infra-release-4.21-amd64-nightly-baremetal-ove-compact-agent-ipv4-disc-konflux
+              - periodic-ci-openshift-eng-agent-qe-infra-ove-baremetal-compact-disc-konflux
