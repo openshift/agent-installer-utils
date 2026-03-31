@@ -92,7 +92,7 @@ function build()
     if [ "$(id -u)" -eq 0 ]; then
         SUDO=""
     else
-        SUDO="sudo"
+        SUDO="sudo -E"
     fi
 
     case "$STEP" in
