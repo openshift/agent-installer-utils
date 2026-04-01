@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Fail on unset variables and errors 
-set -euo pipefail
+set -xeuo pipefail
 
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source $SCRIPTDIR/helper.sh
