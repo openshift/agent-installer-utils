@@ -51,7 +51,7 @@ operators:
           - name: "4.21"
       - name: loki-operator
         channels:
-          - name: stable-6.4
+          - name: stable-6.5
       - name: cluster-logging
         channels:
-          - name: stable-6.4
+          - name: stable-6.5
