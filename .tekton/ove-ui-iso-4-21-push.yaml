@@ -17,7 +17,7 @@ metadata:
   namespace: ocp-agent-based-installer-tenant
 spec:
   timeouts:
-    pipeline: 4h
+    pipeline: 6h
   params:
   - name: git-url
     value: '{{source_url}}'
@@ -27,7 +27,7 @@ spec:
     value: quay.io/redhat-user-workloads/ocp-agent-based-installer-tenant/ove-ui-iso-4-21:{{revision}}
   - name: build-platforms
     value:
-    - linux-root/amd64
+    - linux-d320-m8xlarge/amd64
   - name: dockerfile
     value: Dockerfile
   - name: path-context
@@ -239,7 +239,7 @@ spec:
         value: $(params.buildah-format)
       runAfter:
       - prefetch-dependencies
-      timeout: 3h
+      timeout: 4h
       taskRef:
         params:
         - name: name
@@ -561,7 +561,7 @@ spec:
         - ReadWriteOnce
         resources:
           requests:
-            storage: 50Gi  # Increase this to fit the ISO
+            storage: 60Gi  # Increase this to fit the ISO
   taskRunSpecs:
   - pipelineTaskName: build-images
     stepSpecs:
