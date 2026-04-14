@@ -20,8 +20,6 @@ parse_inputs "$@"
 validate_inputs
 setup_vars
 
-source $SCRIPTDIR/logging.sh
-
 function create_appliance_config() {
     # The appliance-config.yaml has been copied to the correct directory
     if [ -f "${appliance_work_dir}"/appliance-config.yaml ]; then

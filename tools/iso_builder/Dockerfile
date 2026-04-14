@@ -9,10 +9,9 @@ ARG PATCH_VERSION
 ARG ARCH
 
 # Copy the configuration script into the container
-COPY hack/build-ove-image.sh hack/helper.sh hack/logging.sh /tmp/
+COPY hack/build-ove-image.sh hack/helper.sh /tmp/
 RUN chmod +x /tmp/build-ove-image.sh
 RUN chmod +x /tmp/helper.sh
-RUN chmod +x /tmp/logging.sh
 
 # COPY appliance-config.yaml and operator CRs into container
 COPY config/${MAJOR_MINOR_VERSION}/. /
