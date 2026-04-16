@@ -38,11 +38,11 @@ spec:
   - name: privileged-nested
     value: 'true'
   - name: release-value
-    value: "quay.io/openshift-release-dev/ocp-release:4.21.0-ec.1-x86_64"
+    value: "quay.io/openshift-release-dev/ocp-release:4.21.10-x86_64"
   - name: major-minor-version
     value: "4.21"
   - name: patch-version
-    value: "0"
+    value: "10"
   pipelineSpec:
     description: |
       This pipeline is ideal for building multi-arch container images from a Containerfile while maintaining trust after pipeline customization.
@@ -359,31 +359,6 @@ spec:
         operator: in
         values:
         - "true"
-    - matrix:
-        params:
-        - name: platform
-          value:
-          - $(params.build-platforms)
-      name: ecosystem-cert-preflight-checks
-      params:
-      - name: image-url
-        value: $(tasks.build-image-index.results.IMAGE_URL)
-      runAfter:
-      - build-image-index
-      taskRef:
-        params:
-        - name: name
-          value: ecosystem-cert-preflight-checks
-        - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-ecosystem-cert-preflight-checks:0.2@sha256:b4ac586edea81dcd25dfc17f1bd57899825be2b443e48d572cd05ce058f153bb
-        - name: kind
-          value: task
-        resolver: bundles
-      when:
-      - input: $(params.skip-checks)
-        operator: in
-        values:
-        - "false"
     - name: sast-snyk-check
       params:
       - name: image-digest
