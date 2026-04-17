@@ -6,14 +6,14 @@ set -euo pipefail
 function parse_inputs() {
     while [[ "$#" -gt 0 ]]; do
         case $1 in
-            --release-image-url) 
+            --release-image-url)
                 if [[ -n "$RELEASE_IMAGE_VERSION" ]]; then
                     echo "Error: Cannot specify both --release-image-url and --ocp-version." >&2
                     usage
                     exit 1
                 fi
                 RELEASE_IMAGE_URL="$2"; shift ;;
-            --ocp-version) 
+            --ocp-version)
                 if [[ -n "$RELEASE_IMAGE_URL" ]]; then
                     echo "Error: Cannot specify both --release-image-url and --ocp-version." >&2
                     usage
@@ -24,9 +24,11 @@ function parse_inputs() {
             --pull-secret-file) PULL_SECRET_FILE="$2"; shift ;;
             --ssh-key-file) SSH_KEY_FILE="$2"; shift ;;
             --appliance-image) APPLIANCE_IMAGE="$2"; shift ;;
+            --mirror-path) [[ $# -lt 2 ]] && { echo "Error: --mirror-path requires a value." >&2; exit 1; }; MIRROR_PATH="$2"; shift ;;
+            --registry-cert) [[ $# -lt 2 ]] && { echo "Error: --registry-cert requires a value." >&2; exit 1; }; REGISTRY_CERT="$2"; shift ;;
             --dir) DIR_PATH="$2"; shift ;;
             --step) STEP="$2"; shift ;;
-            *) 
+            *)
                 echo "Unknown parameter: $1" >&2
                 usage
                 exit 1 ;;
@@ -68,6 +70,16 @@ function validate_inputs() {
     fi
     if [[ -n "$SSH_KEY_FILE" && ! -f "$SSH_KEY_FILE" ]]; then
         echo "File $SSH_KEY_FILE does not exist." >&2
+        exit 1
+    fi
+
+    if [[ -n "$REGISTRY_CERT" && ! -f "$REGISTRY_CERT" ]]; then
+        echo "Error: Registry certificate file $REGISTRY_CERT does not exist." >&2
+        exit 1
+    fi
+
+    if [[ -n "$MIRROR_PATH" && ! -d "$MIRROR_PATH" ]]; then
+        echo "Error: Mirror path $MIRROR_PATH does not exist or is not a directory." >&2
         exit 1
     fi
 
@@ -156,6 +168,8 @@ function usage() {
     echo "  --arch <architecture>          Target CPU architecture (default: x86_64)"
     echo "  --ssh-key-file <path>          Path to the SSH key file (e.g., ~/.ssh/id_rsa)"
     echo "  --dir <path>                   Path for ISOBuilder assets (default: /tmp/iso_builder)"
+    echo "  --mirror-path <path>           Path to pre-mirrored images (skips oc-mirror if provided)"
+    echo "  --registry-cert <path>         Path to registry certificate for custom registries with self-signed certs"
     echo "  --step <step>                  Control the steps that will be invoked, options are all, configure, and create-iso (default: all)"
     echo ""
     echo "Examples:"
