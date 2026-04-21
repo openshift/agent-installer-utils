@@ -8,6 +8,9 @@ ARG MAJOR_MINOR_VERSION
 ARG PATCH_VERSION
 ARG ARCH
 
+# Set environment variable for image policy
+ENV OPENSHIFT_INSTALL_EXPERIMENTAL_DISABLE_IMAGE_POLICY=true
+
 # Copy the configuration script into the container
 COPY hack/build-ove-image.sh hack/helper.sh /tmp/
 RUN chmod +x /tmp/build-ove-image.sh
