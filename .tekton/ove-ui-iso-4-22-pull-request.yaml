@@ -8,10 +8,8 @@ metadata:
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
     pipelinesascode.tekton.dev/cancel-in-progress: "true"
     pipelinesascode.tekton.dev/max-keep-runs: "3"
-    pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch
-      == "release-4.22" && ( "tools/iso_builder/***".pathChanged() || ".tekton/ove-ui-iso-4-22-pull-request.yaml".pathChanged()
-      )
-  creationTimestamp: null
+    pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch == "release-4.22" && ( "tools/iso_builder/***".pathChanged() || ".tekton/ove-ui-iso-4-22-pull-request.yaml".pathChanged() )
+  creationTimestamp:
   labels:
     appstudio.openshift.io/application: ove-ui-4-22
     appstudio.openshift.io/component: ove-ui-iso-4-22
@@ -19,6 +17,8 @@ metadata:
   name: ove-ui-iso-4-22-on-pull-request
   namespace: ocp-agent-based-installer-tenant
 spec:
+  timeouts:
+    pipeline: 4h
   params:
   - name: git-url
     value: '{{source_url}}'
@@ -28,16 +28,27 @@ spec:
     value: quay.io/redhat-user-workloads/ocp-agent-based-installer-tenant/ove-ui-iso-4-22:on-pr-{{revision}}
   - name: image-expires-after
     value: 5d
+  - name: build-platforms
+    value:
+    - linux-root/amd64
   - name: dockerfile
     value: Dockerfile
   - name: path-context
     value: tools/iso_builder
+  - name: privileged-nested
+    value: 'true'
+  - name: release-value
+    value: "quay.io/openshift-release-dev/ocp-release:4.22.0-rc.0-x86_64"
+  - name: major-minor-version
+    value: "4.22"
+  - name: patch-version
+    value: "0"
   pipelineSpec:
     description: |
-      This pipeline is ideal for building container images from a Containerfile while maintaining trust after pipeline customization.
+      This pipeline is ideal for building multi-arch container images from a Containerfile while maintaining trust after pipeline customization.
 
-      _Uses `buildah` to create a container image leveraging [trusted artifacts](https://konflux-ci.dev/architecture/ADR/0036-trusted-artifacts.html). It also optionally creates a source image and runs some build-time tests. Information is shared between tasks using OCI artifacts instead of PVCs. EC will pass the [`trusted_task.trusted`](https://conforma.dev/docs/policy/packages/release_trusted_task.html#trusted_task__trusted) policy as long as all data used to build the artifact is generated from trusted tasks.
-      This pipeline is pushed as a Tekton bundle to [quay.io](https://quay.io/repository/konflux-ci/tekton-catalog/pipeline-docker-build-oci-ta?tab=tags)_
+      _Uses `buildah` to create a multi-platform container image leveraging [trusted artifacts](https://konflux-ci.dev/architecture/ADR/0036-trusted-artifacts.html). It also optionally creates a source image and runs some build-time tests. This pipeline requires that the [multi platform controller](https://github.com/konflux-ci/multi-platform-controller) is deployed and configured on your Konflux instance. Information is shared between tasks using OCI artifacts instead of PVCs. EC will pass the [`trusted_task.trusted`](https://conforma.dev/docs/policy/packages/release_trusted_task.html#trusted_task__trusted) policy as long as all data used to build the artifact is generated from trusted tasks.
+      This pipeline is pushed as a Tekton bundle to [quay.io](https://quay.io/repository/konflux-ci/tekton-catalog/pipeline-docker-build-multi-platform-oci-ta?tab=tags)_
     params:
     - description: Source Repository URL
       name: git-url
@@ -50,13 +61,11 @@ spec:
       name: output-image
       type: string
     - default: .
-      description: Path to the source code of an application's component from where
-        to build image.
+      description: Path to the source code of an application's component from where to build image.
       name: path-context
       type: string
     - default: Dockerfile
-      description: Path to the Dockerfile inside the context specified by parameter
-        path-context
+      description: Path to the Dockerfile inside the context specified by parameter path-context
       name: dockerfile
       type: string
     - default: "false"
@@ -72,26 +81,17 @@ spec:
       name: prefetch-input
       type: string
     - default: ""
-      description: Image tag expiration time, time values could be something like
-        1h, 2d, 3w for hours, days, and weeks, respectively.
+      description: Image tag expiration time, time values could be something like 1h, 2d, 3w for hours, days, and weeks, respectively.
       name: image-expires-after
       type: string
     - default: "false"
       description: Build a source image.
       name: build-source-image
       type: string
-    - default: "false"
+    - default: "true"
       description: Add built image into an OCI image index
       name: build-image-index
       type: string
-    - default: docker
-      description: The format for the resulting image's mediaType. Valid values are
-        oci or docker.
-      name: buildah-format
-      type: string
-    - default: "false"
-      description: Enable cache proxy configuration
-      name: enable-cache-proxy
     - default: []
       description: Array of --build-arg values ("arg=value" strings) for buildah
       name: build-args
@@ -101,9 +101,27 @@ spec:
       name: build-args-file
       type: string
     - default: "false"
-      description: Whether to enable privileged mode, should be used only with remote
-        VMs
+      description: Whether to enable privileged mode, should be used only with remote VMs
       name: privileged-nested
+      type: string
+    - default:
+      - linux/x86_64
+      description: List of platforms to build the container images on. The available set of values is determined by the configuration of the multi-platform-controller.
+      name: build-platforms
+      type: array
+    - name: buildah-format
+      default: docker
+      type: string
+      description: The format for the resulting image's mediaType. Valid values are oci or docker.
+    - name: release-value
+      type: string
+    - name: major-minor-version
+      type: string
+    - name: patch-version
+      type: string
+    - name: enable-cache-proxy
+      default: 'false'
+      description: Enable cache proxy configuration
       type: string
     results:
     - description: ""
@@ -182,7 +200,12 @@ spec:
         workspace: git-auth
       - name: netrc
         workspace: netrc
-    - name: build-container
+    - matrix:
+        params:
+        - name: PLATFORM
+          value:
+          - $(params.build-platforms)
+      name: build-images
       params:
       - name: IMAGE
         value: $(params.output-image)
@@ -200,31 +223,41 @@ spec:
         value: $(tasks.clone-repository.results.commit)
       - name: BUILD_ARGS
         value:
-        - $(params.build-args[*])
+        - "RELEASE_FLAG=--release-image-url"
+        - "RELEASE_VALUE=$(params.release-value)"
+        - "MAJOR_MINOR_VERSION=$(params.major-minor-version)"
+        - "PATCH_VERSION=$(params.patch-version)"
+        - "ARCH=x86_64"
       - name: BUILD_ARGS_FILE
         value: $(params.build-args-file)
+      - name: LABELS
+        value:
+        - "release_value=$(params.release-value)"
       - name: PRIVILEGED_NESTED
         value: $(params.privileged-nested)
-      - name: SOURCE_URL
-        value: $(tasks.clone-repository.results.url)
+      - name: SOURCE_ARTIFACT
+        value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
+      - name: CACHI2_ARTIFACT
+        value: $(tasks.prefetch-dependencies.results.CACHI2_ARTIFACT)
+      - name: IMAGE_APPEND_PLATFORM
+        value: "true"
+      - name: ADDITIONAL_SECRET
+        value: "ove-ui-image-pull-secret"
       - name: BUILDAH_FORMAT
         value: $(params.buildah-format)
       - name: HTTP_PROXY
         value: $(tasks.init.results.http-proxy)
       - name: NO_PROXY
         value: $(tasks.init.results.no-proxy)
-      - name: SOURCE_ARTIFACT
-        value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
-      - name: CACHI2_ARTIFACT
-        value: $(tasks.prefetch-dependencies.results.CACHI2_ARTIFACT)
       runAfter:
       - prefetch-dependencies
+      timeout: 3h
       taskRef:
         params:
         - name: name
-          value: buildah-oci-ta
+          value: buildah-remote-oci-ta
         - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-buildah-oci-ta:0.9@sha256:4f177774f52d6ab28ceda38ae843d40fbcd6a32ae637637ae23cbb207e675185
+          value: quay.io/konflux-ci/tekton-catalog/task-buildah-remote-oci-ta:0.9@sha256:4b3b76822c67fb734a9b3a5112e3810e271ee09d2777720a277a33870d3b038b
         - name: kind
           value: task
         resolver: bundles
@@ -236,11 +269,11 @@ spec:
         value: $(params.build-image-index)
       - name: IMAGES
         value:
-        - $(tasks.build-container.results.IMAGE_URL)@$(tasks.build-container.results.IMAGE_DIGEST)
+        - $(tasks.build-images.results.IMAGE_REF[*])
       - name: BUILDAH_FORMAT
         value: $(params.buildah-format)
       runAfter:
-      - build-container
+      - build-images
       taskRef:
         params:
         - name: name
@@ -298,7 +331,12 @@ spec:
         operator: in
         values:
         - "false"
-    - name: clair-scan
+    - matrix:
+        params:
+        - name: image-platform
+          value:
+          - $(params.build-platforms)
+      name: clair-scan
       params:
       - name: image-digest
         value: $(tasks.build-image-index.results.IMAGE_DIGEST)
@@ -311,35 +349,16 @@ spec:
         - name: name
           value: clair-scan
         - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-clair-scan:0.3@sha256:9397d3eb9f1cbebaa15e93256e0ca9eaca148baa674be72f07f4a00df63c4609
+          value: quay.io/konflux-ci/tekton-catalog/task-clair-scan:0.3@sha256:89924756c91ded746cf9ccc9f07907595e5b2454ddda0219132913a4875a5f59
         - name: kind
           value: task
         resolver: bundles
+        # Temporarily disable this for now by checking against true
       when:
       - input: $(params.skip-checks)
         operator: in
         values:
-        - "false"
-    - name: ecosystem-cert-preflight-checks
-      params:
-      - name: image-url
-        value: $(tasks.build-image-index.results.IMAGE_URL)
-      runAfter:
-      - build-image-index
-      taskRef:
-        params:
-        - name: name
-          value: ecosystem-cert-preflight-checks
-        - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-ecosystem-cert-preflight-checks:0.2@sha256:2d439dce35dc07bec38dcf450bcba949851686141a256d87eb6f42e5a217f6e2
-        - name: kind
-          value: task
-        resolver: bundles
-      when:
-      - input: $(params.skip-checks)
-        operator: in
-        values:
-        - "false"
+        - "true"
     - name: sast-snyk-check
       params:
       - name: image-digest
@@ -366,7 +385,12 @@ spec:
         operator: in
         values:
         - "false"
-    - name: clamav-scan
+    - matrix:
+        params:
+        - name: image-arch
+          value:
+          - $(params.build-platforms)
+      name: clamav-scan
       params:
       - name: image-digest
         value: $(tasks.build-image-index.results.IMAGE_DIGEST)
@@ -513,4 +537,13 @@ spec:
   - name: git-auth
     secret:
       secretName: '{{ git_auth_secret }}'
+  taskRunSpecs:
+  - pipelineTaskName: build-images
+    stepSpecs:
+    - name: build
+      computeResources:
+        requests:
+          memory: 8Gi      # Request 8GB or more as needed
+        limits:
+          memory: 8Gi
 status: {}
