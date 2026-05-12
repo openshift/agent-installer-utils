@@ -43,9 +43,9 @@ operators:
       - name: redhat-oadp-operator
         channels:
           - name: stable
-      - name: local-storage-operator
+      - name: lvms-operator
         channels:
-          - name: stable
+          - name: stable-4.21
       - name: numaresources-operator
         channels:
           - name: "4.21"
