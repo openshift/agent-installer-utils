@@ -66,7 +66,7 @@ func (u *UI) hostIPAddresses() []string {
 		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To4() != nil && !ipnet.IP.IsLinkLocalUnicast() {
 				ipv4 = append(ipv4, ipnet.IP.String())
-			} else if ipnet.IP.To16() != nil {
+			} else if ipnet.IP.To16() != nil && !ipnet.IP.IsLinkLocalUnicast() {
 				ipv6 = append(ipv6, ipnet.IP.String())
 			}
 		}
