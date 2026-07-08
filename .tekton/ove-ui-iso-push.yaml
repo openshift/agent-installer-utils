@@ -17,7 +17,7 @@ metadata:
   namespace: ocp-agent-based-installer-tenant
 spec:
   timeouts:
-    pipeline: 4h
+    pipeline: 5h
   params:
   - name: git-url
     value: '{{source_url}}'
@@ -27,7 +27,7 @@ spec:
     value: quay.io/redhat-user-workloads/ocp-agent-based-installer-tenant/ove-ui-iso:{{revision}}
   - name: build-platforms
     value:
-    - linux-root/amd64
+    - linux-d320-m8xlarge/amd64
   - name: dockerfile
     value: Dockerfile
   - name: path-context
@@ -35,11 +35,11 @@ spec:
   - name: privileged-nested
     value: 'true'
   - name: release-value
-    value: "quay.io/openshift-release-dev/ocp-release:4.21.10-x86_64"
+    value: "quay.io/openshift-release-dev/ocp-release:4.22.4-x86_64"
   - name: major-minor-version
-    value: "4.21"
+    value: "4.22"
   - name: patch-version
-    value: "10"
+    value: "4"
   pipelineSpec:
     description: |
       This pipeline is ideal for building multi-arch container images from a Containerfile while maintaining trust after pipeline customization.
