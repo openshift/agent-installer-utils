@@ -46,6 +46,9 @@ operators:
       - name: local-storage-operator
         channels:
           - name: stable
+      - name: lvms-operator
+        channels:
+          - name: stable-4.21
       - name: numaresources-operator
         channels:
           - name: "4.21"
