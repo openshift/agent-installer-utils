@@ -18,7 +18,7 @@ operators:
           - name: stable
       - name: mtv-operator
         channels:
-          - name: release-v2.11
+          - name: release-v2.12
       - name: kubernetes-nmstate-operator
         channels:
           - name: stable
@@ -51,7 +51,7 @@ operators:
           - name: "4.21"
       - name: loki-operator
         channels:
-          - name: stable-6.5
+          - name: stable-6.6
       - name: cluster-logging
         channels:
-          - name: stable-6.5
+          - name: stable-6.6
