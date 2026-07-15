@@ -558,4 +558,10 @@ spec:
           memory: 8Gi      # Request 8GB or more as needed
         limits:
           memory: 8Gi
+    - name: sbom-syft-generate
+      computeResources:
+        requests:
+          memory: 16Gi  # Increase this specifically for syft
+        limits:
+          memory: 16Gi
 status: {}
