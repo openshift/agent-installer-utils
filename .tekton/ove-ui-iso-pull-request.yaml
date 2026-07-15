@@ -36,7 +36,7 @@ spec:
   - name: path-context
     value: tools/iso_builder
   - name: privileged-nested
-    value: 'true'
+    value: 'false'
   - name: release-value
     value: "quay.io/openshift-release-dev/ocp-release:4.22.4-x86_64"
   - name: major-minor-version
