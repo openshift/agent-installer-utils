@@ -249,7 +249,7 @@ spec:
         value: $(params.buildah-format)
       runAfter:
       - prefetch-dependencies
-      timeout: 3h
+      timeout: 5h
       taskRef:
         params:
         - name: name
