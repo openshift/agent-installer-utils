@@ -1,5 +1,5 @@
 ARG MAJOR_MINOR_VERSION
-FROM registry.ci.openshift.org/ocp/${MAJOR_MINOR_VERSION}:agent-preinstall-image-builder AS builder
+FROM quay-proxy.ci.openshift.org/openshift/ci:ocp_${MAJOR_MINOR_VERSION}_agent-preinstall-image-builder AS builder
 
 # Define the arguments that will be passed in from the pipeline
 ARG RELEASE_FLAG
