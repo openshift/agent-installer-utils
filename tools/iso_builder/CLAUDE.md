@@ -22,7 +22,7 @@ cd tools/iso_builder
 make build-ove-iso PULL_SECRET_FILE=~/pull_secret.json RELEASE_IMAGE_VERSION=4.19.1
 
 # Using release image URL (recommended for CI/nightly builds)
-make build-ove-iso PULL_SECRET_FILE=~/pull_secret.json RELEASE_IMAGE_URL=registry.ci.openshift.org/ocp/release:4.19.0-0.ci-2025-04-01-173804
+make build-ove-iso PULL_SECRET_FILE=~/pull_secret.json RELEASE_IMAGE_URL=quay-proxy.ci.openshift.org/openshift/ci:ocp_release_4.19.0-0.ci-2025-04-01-173804
 
 # Optional parameters
 make build-ove-iso PULL_SECRET_FILE=~/pull_secret.json RELEASE_IMAGE_VERSION=4.19.1 ARCH=x86_64
@@ -94,7 +94,7 @@ The build follows these steps:
      - SSH key (optional)
 
 4. **ISO Build** (`build_live_iso()`)
-   - Uses appliance image: `registry.ci.openshift.org/ocp/<major.minor>:agent-preinstall-image-builder`
+   - Uses appliance image: `quay-proxy.ci.openshift.org/openshift/ci:ocp_<major.minor>_agent-preinstall-image-builder`
    - Runs podman with privileged mode and host networking
    - Mounts appliance work dir to `/assets` in container
    - Executes: `build live-iso --log-level debug`
