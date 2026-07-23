@@ -1,0 +1,73 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: abi-ove-konflux-prow-integration
+spec:
+  description: >-
+    Run OVE+CNV validation 4.22 Prow job
+  params:
+    - name: GANGWAY_TOKEN
+      type: string
+      description: Token to authenticate with gangway
+      default: gangway-token
+    - description: 'Snapshot of the application'
+      name: SNAPSHOT
+      default: '{"components": [{"name":"installer-ove-ui-4-22-art-agent-installer-iso", "containerImage": "quay.io/redhat-user-workloads/ocp-art-tenant/art-agent-installer-iso@sha256:9c753c6a05bdc15269793e96d37735ebfe6f0d74d35bfc2c87cd1967891e9c34"}]}'
+      type: string
+  tasks:
+    - name: get-catalog-image
+      params:
+      - name: SNAPSHOT
+        value: $(params.SNAPSHOT)
+      taskSpec:
+        params:
+          - name: SNAPSHOT
+        results:
+          - name: CATALOG_IMAGE
+            description: "The catalog image extracted from the SNAPSHOT"
+        steps:
+          - name: get-catalog-image
+            image: registry.redhat.io/openshift4/ose-cli:latest
+            env:
+              - name: SNAPSHOT
+                value: $(params.SNAPSHOT)
+            script: |
+              #!/bin/bash
+              set -e
+              dnf -y install jq
+              echo "Snapshot: ${SNAPSHOT}"
+              catalogImage=$(jq -r '.components[] | select(.name=="ove-ui-iso-4-21") | .containerImage' <<< "${SNAPSHOT}")
+              echo "Catalog image: ${catalogImage}"
+              echo -n "${catalogImage}" > $(results.CATALOG_IMAGE.path)
+    - name: prowjob-ove422
+      displayName: "Running prow job $(params.PROWJOB_NAME)"
+      timeout: "5h"
+      runAfter:
+        - get-catalog-image
+      taskRef:
+        resolver: git
+        params:
+        - name: url
+          value: https://github.com/openshift/konflux-tasks
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: tasks/provide-prowjob/0.1/provide-prowjob.yaml
+      params:
+        - name: SNAPSHOT
+          value: $(params.SNAPSHOT)
+        - name: PROWJOB_ORG
+          value: 'openshift-eng'
+        - name: PROWJOB_REPO
+          value: 'agent-qe-infra'
+        - name: VARIANT
+          value: 'amd64-nightly'
+        - name: ARTIFACTS_BUILD_ROOT
+          value: quay-proxy.ci.openshift.org/openshift/ci:openshift_release_rhel-9-release-golang-1.23-openshift-4.22
+        - name: ENVS
+          value: 'SNAPSHOT=$(tasks.get-catalog-image.results.CATALOG_IMAGE)'
+      matrix:
+        params:
+          - name: PROWJOB_NAME
+            value:
+              - periodic-ci-openshift-eng-agent-qe-infra-release-4.22-amd64-nightly-baremetal-ove-compact-konflux
