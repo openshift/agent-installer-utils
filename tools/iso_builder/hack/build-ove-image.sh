@@ -70,7 +70,7 @@ EOF
 
 function build_live_iso() {
     if [ ! -f "${appliance_work_dir}"/appliance.iso ]; then
-        local appliance_image="${APPLIANCE_IMAGE:-registry.ci.openshift.org/ocp/${major_minor_version}:agent-preinstall-image-builder}"
+        local appliance_image="${APPLIANCE_IMAGE:-quay-proxy.ci.openshift.org/openshift/ci:ocp_${major_minor_version}_agent-preinstall-image-builder}"
         echo "Building appliance ISO (image: ${appliance_image})"
 
         # Build the podman run command as an array to avoid shell injection
