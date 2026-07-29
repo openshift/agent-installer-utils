@@ -11,7 +11,7 @@ imageRegistry:
 additionalImages:
   - name: registry.redhat.io/rhel9/support-tools:latest
 operators:
-  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.21
+  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.22
     packages:
       - name: kubevirt-hyperconverged
         channels:
@@ -24,13 +24,13 @@ operators:
           - name: stable
       - name: node-healthcheck-operator
         channels:
-          - name: stable          
+          - name: stable
       - name: node-maintenance-operator
         channels:
           - name: stable
       - name: fence-agents-remediation
         channels:
-          - name: stable          
+          - name: stable
       - name: cluster-kube-descheduler-operator
         channels:
           - name: stable
@@ -48,10 +48,10 @@ operators:
           - name: stable
       - name: lvms-operator
         channels:
-          - name: stable-4.21
+          - name: stable-4.22
       - name: numaresources-operator
         channels:
-          - name: "4.21"
+          - name: "4.22"
       - name: loki-operator
         channels:
           - name: stable-6.6
