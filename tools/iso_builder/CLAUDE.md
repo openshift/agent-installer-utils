@@ -94,7 +94,7 @@ The build follows these steps:
      - SSH key (optional)
 
 4. **ISO Build** (`build_live_iso()`)
-   - Uses appliance image: `quay-proxy.ci.openshift.org/openshift/ci:ocp_<major.minor>_agent-preinstall-image-builder`
+   - Uses appliance image: `quay-proxy.ci.openshift.org/openshift/ci:ocp_<major.minor>_agent-release-iso-builder`
    - Runs podman with privileged mode and host networking
    - Mounts appliance work dir to `/assets` in container
    - Executes: `build live-iso --log-level debug`
