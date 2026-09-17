@@ -161,27 +161,26 @@ func (u *UI) startCountdownTimer(
 ) context.CancelFunc {
 	cctx, cancel := context.WithCancel(ctx)
 
-	start := time.Now()
-	ticker := time.NewTicker(1 * time.Second)
-
 	go func() {
+		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
+
+		remaining := duration
 
 		for {
 			select {
 			case <-cctx.Done():
 				return
 
-			case t := <-ticker.C:
-				elapsed := t.Sub(start)
-				if elapsed >= duration {
+			case <-ticker.C:
+				remaining -= time.Second
+				if remaining <= 0 {
 					u.app.QueueUpdate(onTimeout)
 					return
 				}
 
-				remaining := duration.Seconds() - elapsed.Seconds()
 				u.app.QueueUpdateDraw(func() {
-					onTick(remaining)
+					onTick(remaining.Seconds())
 				})
 			}
 		}
