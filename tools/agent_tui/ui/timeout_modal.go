@@ -71,7 +71,9 @@ func (u *UI) ShowTimeoutDialog() {
 		})
 	}, func() {
 		// On timeout - exit application
-		u.app.Stop()
+		if u.IsTimeoutDialogActive() {
+			u.app.Stop()
+		}
 	})
 }
 
@@ -126,12 +128,12 @@ func (u *UI) ShowRendezvousIPTimeoutDialog(rendezvousIP string) {
 		})
 	}, func() {
 		// On timeout - quit the application
-		u.app.QueueUpdateDraw(func() {
+		if u.IsRendezvousIPTimeoutActive() {
 			u.setIsRendezvousIPTimeoutActive(false)
 			u.pages.HidePage(PAGE_RENDEZVOUS_IP_TIMEOUT)
 			u.logger.Infof("Rendezvous IP timeout expired, exiting application")
 			u.app.Stop()
-		})
+		}
 	})
 }
 
@@ -170,7 +172,7 @@ func (u *UI) startCountdownTimer(
 			case t := <-ticker.C:
 				elapsed := t.Sub(start)
 				if elapsed >= duration {
-					onTimeout()
+					u.app.QueueUpdate(onTimeout)
 					return
 				}
 
