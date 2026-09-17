@@ -112,6 +112,10 @@ func TestInteractiveUIModeWithPrefilledIP(t *testing.T) {
 	// Initialize with interactive mode and prefilled IP
 	controller.Init(1, prefilledIP, true)
 
+	// The timeout modal is displayed from the event loop, so it does not
+	// appear until the application is running.
+	assert.False(t, ui.IsRendezvousIPTimeoutActive())
+
 	go func() {
 		_ = app.Run()
 	}()
@@ -135,6 +139,8 @@ func TestInteractiveUIModeWithoutPrefilledIP(t *testing.T) {
 	// Initialize with interactive mode but no prefilled IP
 	controller.Init(1, "", true)
 
+	// The timeout modal would only be displayed once the event loop is
+	// running, so run the application to verify that it never appears.
 	go func() {
 		_ = app.Run()
 	}()

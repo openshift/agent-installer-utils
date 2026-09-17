@@ -94,7 +94,9 @@ func (u *UI) ShowRendezvousIPPage(rendezvousIP string) {
 	if rendezvousIP != "" {
 		// Show timeout modal with the prefilled rendezvous IP
 		u.logger.Infof("Showing rendezvous IP page with prefilled IP: %s", rendezvousIP)
-		u.ShowRendezvousIPTimeoutDialog(rendezvousIP)
+		go u.app.QueueUpdateDraw(func() {
+			u.ShowRendezvousIPTimeoutDialog(rendezvousIP)
+		})
 	} else {
 		// Show empty IP form
 		u.logger.Infof("Showing rendezvous IP page with empty IP form")
