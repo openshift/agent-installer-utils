@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -64,7 +65,7 @@ func (u *UI) ShowTimeoutDialog() {
 	u.pages.ShowPage(PAGE_TIMEOUTSCREEN)
 
 	// Start countdown timer
-	u.startCountdownTimer(timeout, u.timeoutDialogCancel, func(remaining float64) {
+	u.timeoutDialogCancel = u.startCountdownTimer(context.Background(), timeout, func(remaining float64) {
 		// Update message with remaining time
 		u.timeoutModal.SetText(fmt.Sprintf(modalText, remaining))
 	}, func() {
@@ -76,9 +77,11 @@ func (u *UI) ShowTimeoutDialog() {
 }
 
 func (u *UI) cancelUserPrompt() {
-	u.timeoutDialogCancel <- true
-	u.setIsTimeoutDialogActive(false)
-	u.setFocusToChecks()
+	if u.IsTimeoutDialogActive() {
+		u.timeoutDialogCancel()
+		u.setIsTimeoutDialogActive(false)
+		u.setFocusToChecks()
+	}
 }
 
 // ============================================================================
@@ -119,7 +122,7 @@ func (u *UI) ShowRendezvousIPTimeoutDialog(rendezvousIP string) {
 	u.pages.ShowPage(PAGE_RENDEZVOUS_IP_TIMEOUT)
 
 	// Start countdown timer
-	u.startCountdownTimer(timeout, u.rendezvousIPTimeoutCancel, func(remaining float64) {
+	u.rendezvousIPTimeoutCancel = u.startCountdownTimer(context.Background(), timeout, func(remaining float64) {
 		// Update message with remaining time
 		u.rendezvousIPTimeoutModal.SetText(fmt.Sprintf(rendezvousIPTimeoutModalText, rendezvousIP, remaining))
 	}, func() {
@@ -134,9 +137,11 @@ func (u *UI) ShowRendezvousIPTimeoutDialog(rendezvousIP string) {
 }
 
 func (u *UI) cancelRendezvousIPTimeout() {
-	u.rendezvousIPTimeoutCancel <- true
-	u.setIsRendezvousIPTimeoutActive(false)
-	u.pages.HidePage(PAGE_RENDEZVOUS_IP_TIMEOUT)
+	if u.IsRendezvousIPTimeoutActive() {
+		u.rendezvousIPTimeoutCancel()
+		u.setIsRendezvousIPTimeoutActive(false)
+		u.pages.HidePage(PAGE_RENDEZVOUS_IP_TIMEOUT)
+	}
 }
 
 // ============================================================================
@@ -149,11 +154,13 @@ func (u *UI) cancelRendezvousIPTimeout() {
 // onTick: called every second with remaining time in seconds
 // onTimeout: called when timer expires
 func (u *UI) startCountdownTimer(
+	ctx context.Context,
 	duration time.Duration,
-	cancelChan chan bool,
 	onTick func(remaining float64),
 	onTimeout func(),
-) {
+) context.CancelFunc {
+	cctx, cancel := context.WithCancel(ctx)
+
 	start := time.Now()
 	ticker := time.NewTicker(1 * time.Second)
 
@@ -162,7 +169,7 @@ func (u *UI) startCountdownTimer(
 
 		for {
 			select {
-			case <-cancelChan:
+			case <-cctx.Done():
 				return
 
 			case t := <-ticker.C:
@@ -180,4 +187,5 @@ func (u *UI) startCountdownTimer(
 		}
 	}()
 
+	return cancel
 }

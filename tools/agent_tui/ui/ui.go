@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"sync/atomic"
 
 	"github.com/gdamore/tcell/v2"
@@ -21,7 +22,7 @@ type UI struct {
 	splashScreen        *tview.Modal    // display initial waiting message
 	nmtuiActive         atomic.Value
 	timeoutDialogActive atomic.Value
-	timeoutDialogCancel chan bool
+	timeoutDialogCancel context.CancelFunc
 	dirty               atomic.Value // dirty flag set if the user interacts with the ui
 
 	// Rendezvous node IP workflow
@@ -38,7 +39,7 @@ type UI struct {
 	initialRendezvousIP       string
 	rendezvousIPTimeoutModal  *tview.Modal
 	rendezvousIPTimeoutActive atomic.Value
-	rendezvousIPTimeoutCancel chan bool
+	rendezvousIPTimeoutCancel context.CancelFunc
 
 	focusableItems []tview.Primitive // the list of widgets that can be focused
 	focusedItem    int               // the current focused widget
@@ -48,11 +49,9 @@ type UI struct {
 
 func NewUI(app *tview.Application, config checks.Config, logger *logrus.Logger, initialRendezvousIP string) *UI {
 	ui := &UI{
-		app:                       app,
-		timeoutDialogCancel:       make(chan bool),
-		rendezvousIPTimeoutCancel: make(chan bool),
-		logger:                    logger,
-		initialRendezvousIP:       initialRendezvousIP,
+		app:                 app,
+		logger:              logger,
+		initialRendezvousIP: initialRendezvousIP,
 	}
 	ui.nmtuiActive.Store(false)
 	ui.timeoutDialogActive.Store(false)
