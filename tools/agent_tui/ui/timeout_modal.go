@@ -66,9 +66,7 @@ func (u *UI) ShowTimeoutDialog() {
 	// Start countdown timer
 	u.startCountdownTimer(timeout, u.timeoutDialogCancel, func(remaining float64) {
 		// Update message with remaining time
-		u.app.QueueUpdateDraw(func() {
-			u.timeoutModal.SetText(fmt.Sprintf(modalText, remaining))
-		})
+		u.timeoutModal.SetText(fmt.Sprintf(modalText, remaining))
 	}, func() {
 		// On timeout - exit application
 		if u.IsTimeoutDialogActive() {
@@ -123,9 +121,7 @@ func (u *UI) ShowRendezvousIPTimeoutDialog(rendezvousIP string) {
 	// Start countdown timer
 	u.startCountdownTimer(timeout, u.rendezvousIPTimeoutCancel, func(remaining float64) {
 		// Update message with remaining time
-		u.app.QueueUpdateDraw(func() {
-			u.rendezvousIPTimeoutModal.SetText(fmt.Sprintf(rendezvousIPTimeoutModalText, rendezvousIP, remaining))
-		})
+		u.rendezvousIPTimeoutModal.SetText(fmt.Sprintf(rendezvousIPTimeoutModalText, rendezvousIP, remaining))
 	}, func() {
 		// On timeout - quit the application
 		if u.IsRendezvousIPTimeoutActive() {
@@ -177,7 +173,9 @@ func (u *UI) startCountdownTimer(
 				}
 
 				remaining := duration.Seconds() - elapsed.Seconds()
-				onTick(remaining)
+				u.app.QueueUpdateDraw(func() {
+					onTick(remaining)
+				})
 			}
 		}
 	}()
