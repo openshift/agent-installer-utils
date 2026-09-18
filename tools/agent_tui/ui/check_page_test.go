@@ -2,6 +2,7 @@ package ui
 
 import (
 	"testing"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/checks"
@@ -104,14 +105,24 @@ func TestInteractiveUIModeWithPrefilledIP(t *testing.T) {
 
 	logger := logrus.New()
 	prefilledIP := "192.168.111.80"
-	ui := NewUI(tview.NewApplication(), config, logger, prefilledIP)
+	app := newSimulatedApp(t)
+	ui := NewUI(app, config, logger, prefilledIP)
 	controller := NewController(ui)
 
 	// Initialize with interactive mode and prefilled IP
 	controller.Init(1, prefilledIP, true)
 
-	// Verify timeout modal is active
-	assert.True(t, ui.IsRendezvousIPTimeoutActive())
+	// The timeout modal is displayed from the event loop, so it does not
+	// appear until the application is running.
+	assert.False(t, ui.IsRendezvousIPTimeoutActive())
+
+	go func() {
+		_ = app.Run()
+	}()
+	defer app.Stop()
+
+	// Verify timeout modal becomes active
+	assert.Eventually(t, ui.IsRendezvousIPTimeoutActive, 10*time.Second, 2*time.Millisecond)
 }
 
 func TestInteractiveUIModeWithoutPrefilledIP(t *testing.T) {
@@ -121,14 +132,22 @@ func TestInteractiveUIModeWithoutPrefilledIP(t *testing.T) {
 	}
 
 	logger := logrus.New()
-	ui := NewUI(tview.NewApplication(), config, logger, "")
+	app := newSimulatedApp(t)
+	ui := NewUI(app, config, logger, "")
 	controller := NewController(ui)
 
 	// Initialize with interactive mode but no prefilled IP
 	controller.Init(1, "", true)
 
+	// The timeout modal would only be displayed once the event loop is
+	// running, so run the application to verify that it never appears.
+	go func() {
+		_ = app.Run()
+	}()
+	defer app.Stop()
+
 	// Verify timeout modal is NOT active
-	assert.False(t, ui.IsRendezvousIPTimeoutActive())
+	assert.Never(t, ui.IsRendezvousIPTimeoutActive, time.Second, 2*time.Millisecond)
 }
 
 func TestNonInteractiveUIMode(t *testing.T) {
@@ -165,6 +184,20 @@ func TestTimeoutModalCancellation(t *testing.T) {
 	// Cancel the timeout modal
 	ui.cancelRendezvousIPTimeout()
 	assert.False(t, ui.IsRendezvousIPTimeoutActive())
+}
+
+// newSimulatedApp returns an application backed by a simulation screen, so
+// that its event loop can be run during a test.
+func newSimulatedApp(t *testing.T) *tview.Application {
+	t.Helper()
+	screen := tcell.NewSimulationScreen("")
+	if screen == nil {
+		t.Fatalf("Unable to create simulation screen")
+	}
+	if err := screen.Init(); err != nil {
+		t.Fatalf("Failed to initialize screen: %v", err)
+	}
+	return tview.NewApplication().SetScreen(screen)
 }
 
 func applyKeyToChecks(u *UI, key tcell.Key, numKeyPresses int) {

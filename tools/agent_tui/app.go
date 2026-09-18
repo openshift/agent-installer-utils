@@ -42,7 +42,7 @@ func App(ctx AppContext) {
 
 	logger := logrus.New()
 	// initialize log
-	f, err := os.OpenFile(config.LogPath, os.O_RDWR|os.O_CREATE, 0644)
+	f, err := os.OpenFile(config.LogPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 	if errors.Is(err, os.ErrNotExist) {
 		// handle the case where the file doesn't exist
 		fmt.Printf("Error creating log file %s\n", config.LogPath)

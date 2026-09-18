@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -64,21 +65,23 @@ func (u *UI) ShowTimeoutDialog() {
 	u.pages.ShowPage(PAGE_TIMEOUTSCREEN)
 
 	// Start countdown timer
-	u.startCountdownTimer(timeout, u.timeoutDialogCancel, func(remaining float64) {
+	u.timeoutDialogCancel = u.startCountdownTimer(context.Background(), timeout, func(remaining float64) {
 		// Update message with remaining time
-		u.app.QueueUpdateDraw(func() {
-			u.timeoutModal.SetText(fmt.Sprintf(modalText, remaining))
-		})
+		u.timeoutModal.SetText(fmt.Sprintf(modalText, remaining))
 	}, func() {
 		// On timeout - exit application
-		u.app.Stop()
+		if u.IsTimeoutDialogActive() {
+			u.app.Stop()
+		}
 	})
 }
 
 func (u *UI) cancelUserPrompt() {
-	u.timeoutDialogCancel <- true
-	u.setIsTimeoutDialogActive(false)
-	u.setFocusToChecks()
+	if u.IsTimeoutDialogActive() {
+		u.timeoutDialogCancel()
+		u.setIsTimeoutDialogActive(false)
+		u.setFocusToChecks()
+	}
 }
 
 // ============================================================================
@@ -119,26 +122,26 @@ func (u *UI) ShowRendezvousIPTimeoutDialog(rendezvousIP string) {
 	u.pages.ShowPage(PAGE_RENDEZVOUS_IP_TIMEOUT)
 
 	// Start countdown timer
-	u.startCountdownTimer(timeout, u.rendezvousIPTimeoutCancel, func(remaining float64) {
+	u.rendezvousIPTimeoutCancel = u.startCountdownTimer(context.Background(), timeout, func(remaining float64) {
 		// Update message with remaining time
-		u.app.QueueUpdateDraw(func() {
-			u.rendezvousIPTimeoutModal.SetText(fmt.Sprintf(rendezvousIPTimeoutModalText, rendezvousIP, remaining))
-		})
+		u.rendezvousIPTimeoutModal.SetText(fmt.Sprintf(rendezvousIPTimeoutModalText, rendezvousIP, remaining))
 	}, func() {
 		// On timeout - quit the application
-		u.app.QueueUpdateDraw(func() {
+		if u.IsRendezvousIPTimeoutActive() {
 			u.setIsRendezvousIPTimeoutActive(false)
 			u.pages.HidePage(PAGE_RENDEZVOUS_IP_TIMEOUT)
 			u.logger.Infof("Rendezvous IP timeout expired, exiting application")
 			u.app.Stop()
-		})
+		}
 	})
 }
 
 func (u *UI) cancelRendezvousIPTimeout() {
-	u.rendezvousIPTimeoutCancel <- true
-	u.setIsRendezvousIPTimeoutActive(false)
-	u.pages.HidePage(PAGE_RENDEZVOUS_IP_TIMEOUT)
+	if u.IsRendezvousIPTimeoutActive() {
+		u.rendezvousIPTimeoutCancel()
+		u.setIsRendezvousIPTimeoutActive(false)
+		u.pages.HidePage(PAGE_RENDEZVOUS_IP_TIMEOUT)
+	}
 }
 
 // ============================================================================
@@ -151,33 +154,37 @@ func (u *UI) cancelRendezvousIPTimeout() {
 // onTick: called every second with remaining time in seconds
 // onTimeout: called when timer expires
 func (u *UI) startCountdownTimer(
+	ctx context.Context,
 	duration time.Duration,
-	cancelChan chan bool,
 	onTick func(remaining float64),
 	onTimeout func(),
-) {
-	start := time.Now()
-	ticker := time.NewTicker(1 * time.Second)
+) context.CancelFunc {
+	cctx, cancel := context.WithCancel(ctx)
 
 	go func() {
+		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
+
+		remaining := duration
 
 		for {
 			select {
-			case <-cancelChan:
+			case <-cctx.Done():
 				return
 
-			case t := <-ticker.C:
-				elapsed := t.Sub(start)
-				if elapsed >= duration {
-					onTimeout()
+			case <-ticker.C:
+				remaining -= time.Second
+				if remaining <= 0 {
+					u.app.QueueUpdate(onTimeout)
 					return
 				}
 
-				remaining := duration.Seconds() - elapsed.Seconds()
-				onTick(remaining)
+				u.app.QueueUpdateDraw(func() {
+					onTick(remaining.Seconds())
+				})
 			}
 		}
 	}()
 
+	return cancel
 }
