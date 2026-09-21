@@ -156,8 +156,8 @@ func (u *UI) startCountdownTimer(
 	onTick func(remaining float64),
 	onTimeout func(),
 ) {
-	start := time.Now()
 	ticker := time.NewTicker(1 * time.Second)
+	secondsRemaining := int(duration.Seconds())
 
 	go func() {
 		defer ticker.Stop()
@@ -167,15 +167,14 @@ func (u *UI) startCountdownTimer(
 			case <-cancelChan:
 				return
 
-			case t := <-ticker.C:
-				elapsed := t.Sub(start)
-				if elapsed >= duration {
+			case <-ticker.C:
+				secondsRemaining--
+				if secondsRemaining <= 0 {
 					onTimeout()
 					return
 				}
 
-				remaining := duration.Seconds() - elapsed.Seconds()
-				onTick(remaining)
+				onTick(float64(secondsRemaining))
 			}
 		}
 	}()
