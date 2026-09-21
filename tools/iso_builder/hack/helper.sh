@@ -114,7 +114,7 @@ function setup_vars() {
     fi
     if [ -n "${RELEASE_IMAGE_URL}" ]; then
         echo "Using release image ${RELEASE_IMAGE_URL}"
-        full_ocp_version=$(skopeo inspect --authfile $PULL_SECRET_FILE docker://$RELEASE_IMAGE_URL | jq -r '.Labels["io.openshift.release"]')
+        full_ocp_version=$(skopeo inspect --no-tags --authfile "$PULL_SECRET_FILE" "docker://$RELEASE_IMAGE_URL" | jq -r '.Labels["io.openshift.release"]')
         image_ref="${RELEASE_IMAGE_URL}"
     fi
 
