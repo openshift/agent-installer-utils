@@ -118,6 +118,7 @@ func (u *UI) setFocusToRendezvousIP() {
 
 func (u *UI) setFocusToSelectIP() {
 	u.setIsRendezousIPFormActive(true)
+	u.refreshSelectIPList()
 	u.pages.SwitchToPage(PAGE_SET_NODE_AS_RENDEZVOUS)
 
 	u.app.SetFocus(u.selectIPList)
