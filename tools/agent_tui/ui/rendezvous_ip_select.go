@@ -14,6 +14,8 @@ const (
 	RENDEZVOUS_CONFIGURE_NETWORK_BUTTON = "<Configure Network>"
 )
 
+var getInterfaceAddrs = net.InterfaceAddrs
+
 func (u *UI) createSelectHostIPPage() {
 	u.selectIPList = tview.NewList()
 	u.refreshSelectIPList()
@@ -56,7 +58,7 @@ func (u *UI) createSelectHostIPPage() {
 }
 
 func (u *UI) hostIPAddresses() []string {
-	addrs, err := net.InterfaceAddrs()
+	addrs, err := getInterfaceAddrs()
 	if err != nil {
 		u.logger.Errorf("Could not fetch host IPs: %v", err)
 	}
