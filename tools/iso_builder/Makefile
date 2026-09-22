@@ -14,7 +14,7 @@ ifdef RELEASE_IMAGE_VERSION
 else ifdef RELEASE_IMAGE_URL
     RELEASE_FLAG := --release-image-url
     RELEASE_VALUE := $(RELEASE_IMAGE_URL)
-    full_ocp_version := $(shell skopeo inspect --authfile $(PULL_SECRET_FILE) docker://$(RELEASE_IMAGE_URL) | jq -r '.Labels["io.openshift.release"]')
+    full_ocp_version := $(shell skopeo inspect --no-tags --authfile "$(PULL_SECRET_FILE)" "docker://$(RELEASE_IMAGE_URL)" | jq -r '.Labels["io.openshift.release"]')
 endif
 
 MAJOR_MINOR_VERSION := $(shell echo $(full_ocp_version) | cut -d'.' -f1,2)
