@@ -89,12 +89,11 @@ func (u *UI) cancelUserPrompt() {
 func (u *UI) createRendezvousIPTimeoutModal() {
 	u.rendezvousIPTimeoutModal = tview.NewModal().
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			if buttonIndex == 0 {
-				// Modify button - close modal and show form with prefilled IP
+			switch buttonLabel {
+			case MODIFY_BUTTON:
 				u.cancelRendezvousIPTimeout()
 				u.setFocusToRendezvousIP()
-			} else {
-				// Quit button - exit the application
+			case QUIT_TIMEOUT_BUTTON:
 				u.cancelRendezvousIPTimeout()
 				u.app.Stop()
 			}
