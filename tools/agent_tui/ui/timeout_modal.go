@@ -89,6 +89,7 @@ func (u *UI) cancelUserPrompt() {
 func (u *UI) createRendezvousIPTimeoutModal() {
 	u.rendezvousIPTimeoutModal = tview.NewModal().
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+			u.logger.Infof("Rendezvous IP timeout modal DoneFunc called: buttonIndex=%d, buttonLabel=%q", buttonIndex, buttonLabel)
 			switch buttonLabel {
 			case MODIFY_BUTTON:
 				u.cancelRendezvousIPTimeout()
@@ -112,6 +113,7 @@ func (u *UI) createRendezvousIPTimeoutModal() {
 }
 
 func (u *UI) ShowRendezvousIPTimeoutDialog(rendezvousIP string) {
+	u.logger.Infof("Showing rendezvous IP timeout dialog for IP: %s, timeout: %v", rendezvousIP, timeout)
 	u.setIsRendezvousIPTimeoutActive(true)
 	u.rendezvousIPTimeoutModal.SetText(fmt.Sprintf(rendezvousIPTimeoutModalText, rendezvousIP, timeout.Seconds()))
 	u.app.SetFocus(u.rendezvousIPTimeoutModal)
@@ -135,6 +137,7 @@ func (u *UI) ShowRendezvousIPTimeoutDialog(rendezvousIP string) {
 }
 
 func (u *UI) cancelRendezvousIPTimeout() {
+	u.logger.Infof("Cancelling rendezvous IP timeout")
 	u.rendezvousIPTimeoutCancel <- true
 	u.setIsRendezvousIPTimeoutActive(false)
 	u.pages.HidePage(PAGE_RENDEZVOUS_IP_TIMEOUT)
@@ -158,21 +161,26 @@ func (u *UI) startCountdownTimer(
 	ticker := time.NewTicker(1 * time.Second)
 	secondsRemaining := int(duration.Seconds())
 
+	u.logger.Infof("Countdown timer started: %v (%d seconds)", duration, secondsRemaining)
+
 	go func() {
 		defer ticker.Stop()
 
 		for {
 			select {
 			case <-cancelChan:
+				u.logger.Infof("Countdown timer cancelled at %d seconds remaining", secondsRemaining)
 				return
 
 			case <-ticker.C:
 				secondsRemaining--
 				if secondsRemaining <= 0 {
+					u.logger.Infof("Countdown timer expired")
 					onTimeout()
 					return
 				}
 
+				u.logger.Infof("Countdown timer tick: %d seconds remaining", secondsRemaining)
 				onTick(float64(secondsRemaining))
 			}
 		}
