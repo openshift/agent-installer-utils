@@ -5,6 +5,7 @@ import (
 
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/checks"
 	"github.com/openshift/agent-installer-utils/tools/agent_tui/ui"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestChecksPage(t *testing.T) {
@@ -121,6 +122,59 @@ func TestChecksPage(t *testing.T) {
 			defer app.Stop()
 
 			steps(app)
+		})
+	}
+}
+
+func TestPrepareConfig(t *testing.T) {
+	cases := []struct {
+		name                   string
+		releaseImageURL        string
+		expectedError          bool
+		expectedHostname       string
+		expectedSchemeHostPort string
+	}{
+		{
+			name:                   "release image without scheme",
+			releaseImageURL:        "quay.io/openshift-release-dev/ocp-release:4.12.2-x86_64",
+			expectedHostname:       "quay.io",
+			expectedSchemeHostPort: "https://quay.io",
+		},
+		{
+			name:                   "release image with scheme and port",
+			releaseImageURL:        "https://registry.example.com:8443/ocp-release:4.19.1",
+			expectedHostname:       "registry.example.com",
+			expectedSchemeHostPort: "https://registry.example.com:8443",
+		},
+		{
+			name:            "url starting with a dash",
+			releaseImageURL: "-type=ANY.example",
+			expectedError:   true,
+		},
+		{
+			// url.Parse accepts a leading "-" in the host, so this passes the
+			// url check but yields the hostname "-type=ANY.example", which
+			// nslookup would read as an option.
+			name:            "hostname starting with a dash",
+			releaseImageURL: "https://-type=ANY.example",
+			expectedError:   true,
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			config := checks.Config{ReleaseImageURL: tc.releaseImageURL}
+			err := prepareConfig(&config)
+
+			if tc.expectedError {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expectedHostname, config.ReleaseImageHostname)
+			assert.Equal(t, tc.expectedSchemeHostPort, config.ReleaseImageSchemeHostnamePort)
 		})
 	}
 }

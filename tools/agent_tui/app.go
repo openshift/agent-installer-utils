@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/openshift/agent-installer-utils/pkg/version"
@@ -86,10 +87,23 @@ func App(ctx AppContext) {
 }
 
 func prepareConfig(config *checks.Config) error {
+	// A value starting with "-" would be treated as an option rather than an
+	// argument by the commands run by the checks.
+	if strings.HasPrefix(config.ReleaseImageURL, "-") {
+		return fmt.Errorf("invalid release image URL: %q", config.ReleaseImageURL)
+	}
+
 	// Set hostname
 	hostname, err := checks.ParseHostnameFromURL(config.ReleaseImageURL)
 	if err != nil {
 		return err
+	}
+	// The hostname needs its own check: url.Parse accepts a leading "-" in the
+	// host, so "https://-type=ANY.example" passes the check above but yields
+	// the hostname "-type=ANY.example". nslookup has no "--" terminator to
+	// fall back on, so an option-like hostname must be rejected here.
+	if strings.HasPrefix(hostname, "-") {
+		return fmt.Errorf("invalid release image hostname: %q", hostname)
 	}
 	config.ReleaseImageHostname = hostname
 

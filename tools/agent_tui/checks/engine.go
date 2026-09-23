@@ -70,13 +70,15 @@ type CheckFunctions map[string]CheckFunction
 
 var defaultCheckFunctions = CheckFunctions{
 	CheckTypeReleaseImagePull: func(checkType string, c Config) ([]byte, error) {
-		return exec.Command("podman", "pull", c.ReleaseImageURL).CombinedOutput()
+		return exec.Command("podman", "pull", "--", c.ReleaseImageURL).CombinedOutput()
 	},
 	CheckTypeReleaseImageHostDNS: func(checkType string, c Config) ([]byte, error) {
+		// No "--" terminator here: nslookup does not support one, and consumes
+		// it as an invalid option. The hostname is validated in prepareConfig.
 		return exec.Command("nslookup", c.ReleaseImageHostname).CombinedOutput()
 	},
 	CheckTypeReleaseImageHostPing: func(checkType string, c Config) ([]byte, error) {
-		return exec.Command("ping", "-c", "4", c.ReleaseImageHostname).CombinedOutput()
+		return exec.Command("ping", "-c", "4", "--", c.ReleaseImageHostname).CombinedOutput()
 	},
 	CheckTypeReleaseImageHttp: func(checkType string, c Config) ([]byte, error) {
 		resp, err := http.Get(c.ReleaseImageSchemeHostnamePort)
