@@ -15,6 +15,7 @@ export DIR_PATH=""
 export APPLIANCE_IMAGE=""
 export MIRROR_PATH=""
 export REGISTRY_CERT=""
+export ENABLE_FIPS=""
 
 # Check user provided params
 [[ $# -lt 2 ]] && usage
@@ -60,6 +61,12 @@ EOF
         if [[ -n "$MIRROR_PATH" ]]; then
             cat << EOF >> ${cfg}
 mirrorPath: /mirror
+EOF
+        fi
+
+        if [[ "${ENABLE_FIPS}" == "true" ]]; then
+            cat << EOF >> ${cfg}
+enableFips: true
 EOF
         fi
 

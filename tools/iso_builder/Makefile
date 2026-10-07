@@ -6,6 +6,7 @@ RELEASE_IMAGE_URL ?=
 RELEASE_IMAGE_VERSION ?=
 MIRROR_PATH ?=
 REGISTRY_CERT ?=
+ENABLE_FIPS ?= false
 
 ifdef RELEASE_IMAGE_VERSION
     RELEASE_FLAG := --ocp-version
@@ -27,7 +28,7 @@ clean-appliance-temp-dir:
 	hack/cleanup.sh clean-appliance-temp-dir
 	
 build-ove-iso:
-	hack/build-ove-image.sh $(RELEASE_FLAG) $(RELEASE_VALUE) --pull-secret-file "$(PULL_SECRET_FILE)" $(if $(MIRROR_PATH),--mirror-path "$(MIRROR_PATH)") $(if $(REGISTRY_CERT),--registry-cert "$(REGISTRY_CERT)")
+	hack/build-ove-image.sh $(RELEASE_FLAG) $(RELEASE_VALUE) --pull-secret-file "$(PULL_SECRET_FILE)" $(if $(MIRROR_PATH),--mirror-path "$(MIRROR_PATH)") $(if $(REGISTRY_CERT),--registry-cert "$(REGISTRY_CERT)") --fips "$(ENABLE_FIPS)"
 
 build-ove-iso-container:
 	# Build the container with specific capabilities to support skopeo used by openshift-appliance
