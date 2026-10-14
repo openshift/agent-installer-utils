@@ -28,6 +28,7 @@ function parse_inputs() {
             --registry-cert) [[ $# -lt 2 ]] && { echo "Error: --registry-cert requires a value." >&2; exit 1; }; REGISTRY_CERT="$2"; shift ;;
             --dir) DIR_PATH="$2"; shift ;;
             --step) STEP="$2"; shift ;;
+            --fips) [[ $# -lt 2 || -z "$2" ]] && { echo "Error: --fips requires a value (true or false)." >&2; exit 1; }; ENABLE_FIPS="$2"; shift ;;
             *)
                 echo "Unknown parameter: $1" >&2
                 usage
@@ -88,6 +89,19 @@ function validate_inputs() {
         echo "Directory path not specified. Using default location: $DIR_PATH."
     else
         echo "ISOBuilder assets will be stored in: $DIR_PATH."
+    fi
+
+    if [[ -z "${ENABLE_FIPS:-}" ]]; then
+        ENABLE_FIPS="false"
+    fi
+
+    if [[ "$ENABLE_FIPS" != "true" && "$ENABLE_FIPS" != "false" ]]; then
+        echo "Error: --fips must be 'true' or 'false'." >&2
+        exit 1
+    fi
+
+    if [[ "$ENABLE_FIPS" == "true" ]]; then
+        echo "FIPS mode enabled. The generated ISO will boot with 'fips=1'."
     fi
 
     if [[ -z "${STEP:-}" ]]; then
@@ -171,6 +185,7 @@ function usage() {
     echo "  --mirror-path <path>           Path to pre-mirrored images (skips oc-mirror if provided)"
     echo "  --registry-cert <path>         Path to registry certificate for custom registries with self-signed certs"
     echo "  --step <step>                  Control the steps that will be invoked, options are all, configure, and create-iso (default: all)"
+    echo "  --fips <true|false>            Build a FIPS-enabled ISO, adding the 'fips=1' kernel argument (default: false)."
     echo ""
     echo "Examples:"
     echo "$0 --pull-secret-file ~/pull_secret.json --release-image-url quay-proxy.ci.openshift.org/openshift/ci:ocp_release_4.19.0-0.ci-2025-04-01-173804"
