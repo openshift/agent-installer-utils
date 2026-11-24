@@ -35,7 +35,7 @@ ARG ARCH
 ARG MAJOR_MINOR_VERSION
 ARG PATCH_VERSION
 # Copy final ISO as only thing from builder stage
-COPY --from=builder /agent-ove.$ARCH.iso /agent-ove.$ARCH.iso
+COPY --from=builder /agent-ove.$ARCH.iso /agent-ove-${MAJOR_MINOR_VERSION}.${PATCH_VERSION}.$ARCH.iso
 
 LABEL summary="OpenShift Agent-Based Installer for OVE UI ISO" \
       name="Agent Installer for OpenShift-Virt" \
